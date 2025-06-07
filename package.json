@@ -1,10 +1,8 @@
 {
   "name": "waavy",
   "description": "A library to support rendering React components like in any server environment, not just javascript runtimes.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
-  "module": "out/index.js",
-  "types": "out/lib/index.d.ts",
   "files": [
     "package.json",
     "README.md"
