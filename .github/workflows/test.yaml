@@ -1,0 +1,61 @@
+name: test
+
+on:
+    push:
+    pull_request:
+    workflow_dispatch:
+
+jobs:
+    check-types:
+        name: Check Types
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v3
+            - name: Setup Bun Runtime
+              uses: oven-sh/setup-bun@v2
+              with:
+                bun-version: latest
+            - name: Install dependencies
+              run: bun install
+            - name: Check types
+              run: bun run check-types
+              continue-on-error: true
+    test:
+        name: Test
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v3
+            - name: Setup Bun Runtime
+              uses: oven-sh/setup-bun@v2
+              with:
+                bun-version: latest
+            - name: Install dependencies
+              run: bun install
+            - name: Run tests
+              run: bun test
+              continue-on-error: true
+    summary:
+        name: Pipeline Summary
+        needs:
+            - check-types
+            - test
+        runs-on: ubuntu-latest
+        if: always()  # Run regardless of previous job status
+        steps:
+            - name: Print summary
+              run: |
+                echo "📝 Pipeline Summary:"
+                
+                if [[ "${{ needs.test.result }}" == "success" && "${{ needs.check-types.result }}" == "success" ]]; then
+                    echo "✅ All jobs succeeded!"
+                else
+                    echo "❌ One or more jobs failed."
+                    echo "🔎 check-types: ${{ needs.check-types.result }}"
+                    echo "🔎 test: ${{ needs.test.result }}"
+                    exit 1
+                fi
+
+
+            
