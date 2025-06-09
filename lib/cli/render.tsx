@@ -1,9 +1,9 @@
 import React from "react";
-import type { ReactDOMServerReadableStream } from "react-dom/server";
+import type { RenderToReadableStreamOptions } from "react-dom/server";
 import type { Command } from "commander";
 import fs from "fs";
 
-import { pipeComponentToStdout, pipeComponent } from "@/server";
+import { pipeComponentToStdout, pipeComponent, pipeComponentToNodeStream } from "@/server";
 import type { RenderOptions } from "@/types";
 import { $load, $relative } from "@/utils";
 
@@ -40,7 +40,11 @@ type RenderActionOptions = {
 const renderAction: RenderAction = async (pathToComponent, options) => {
   const Component = await $load(pathToComponent, options.name);
   let props = await getLoaderProvisionedProps(options, getPropsFromOptions(options));
-  await pipeComponentToStdout(<Component {...props} />);
+  if (options?.pipe) {
+    return await pipeComponentToNamedPipe(options, Component, props);
+  }
+
+  return await pipeComponentToStdout(<Component {...props} />);
 };
 
 export function setupRenderAction(program: Command) {
@@ -68,7 +72,7 @@ export function setupRenderAction(program: Command) {
       true,
     )
     .option(
-      "--pipe",
+      "--pipe <path-to-pipe>",
       "Instead of piping the rendered component to stdout, it will pipe the component to a supplied named pipe. Pretty experimental currently.",
     )
     .action(renderAction);
@@ -123,10 +127,21 @@ async function pipeComponentToNamedPipe<Props extends React.JSX.IntrinsicAttribu
   options: RenderActionOptions,
   Component: React.ComponentType,
   props: Props = {} as Props,
-  renderToReadableStreamOptions?: ReactDOMServerReadableStream,
+  renderToReadableStreamOptions: RenderToReadableStreamOptions = {},
 ) {
+  const pipePath = $relative(options.pipe!, import.meta.url);
   const writable = fs.createWriteStream($relative(options.pipe!, import.meta.url));
-  if (!writable) {
-    await pipeComponent(<Component {...props} />, writable);
+  try {
+    await pipeComponentToNodeStream(
+      <Component {...props} />,
+      writable,
+      renderToReadableStreamOptions,
+    );
+    console.error(`Successfully rendered component to pipe: ${pipePath}`);
+  } catch (error) {
+    console.error(`Error piping to named pipe: ${error}`);
+    throw error;
+  } finally {
+    writable.end();
   }
 }

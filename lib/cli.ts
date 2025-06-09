@@ -1,9 +1,6 @@
 import { Command } from "commander";
-import debug from "debug";
-import fs from "fs";
-import path from "path";
-import { pipeComponentToStdout } from "./server";
-import { $load } from "./utils";
+import { setupProgramActions, setupProgramMetadata } from "./cli/index";
+import { setupRenderAction } from "./cli/render";
 
 /**
  * What does this file actually need to do?
@@ -20,12 +17,9 @@ import { $load } from "./utils";
  *
  */
 
-const log = debug("supra:react:cli");
 const program = new Command();
 
-program
-  .name("@supra-dev/react")
-  .version("1.0.0-alpha.1")
-  .description("A library to support rendering React components in non-js server environments");
+setupProgramMetadata(program);
+setupProgramActions(program, [setupRenderAction]);
 
 program.parse(process.argv);

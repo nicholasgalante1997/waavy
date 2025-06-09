@@ -39,7 +39,7 @@ import path from "path";
 
 import { dehydrate, QueryClient, type UseQueryOptions } from "@tanstack/react-query";
 
-import { loadModule } from "@/server";
+import { $load } from "@/utils";
 
 type PrefetchQueryOptions = {
   queryKey: string | string[];
@@ -62,14 +62,14 @@ export async function dehydrateServerSideQueries(
       const resolved = path.resolve(
         query.queryFn.startsWith("/") ? query.queryFn : path.join(process.cwd(), query.queryFn),
       );
-      queryFn = await loadModule(resolved);
+      queryFn = await $load(resolved);
     } else {
       const resolved = path.resolve(
         query.queryFn.path.startsWith("/")
           ? query.queryFn.path
           : path.join(process.cwd(), query.queryFn.path),
       );
-      queryFn = await loadModule(resolved, query.queryFn.module);
+      queryFn = await $load(resolved, query.queryFn.module);
     }
 
     if (queryFn) {
