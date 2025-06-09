@@ -1,4 +1,4 @@
-import { $relative } from "@/utils";
+import { $relative, bundleInlineCode } from "@/utils";
 
 interface ServerContext {}
 
@@ -14,21 +14,25 @@ interface CreateHydrationBundleOptions<Props = Record<string, unknown>> {
    */
   import?: "default" | string;
   props?: Props;
-  loaders?: {
-    props?: (ctx?: ServerContext, request?: Request) => Props | Promise<Props>;
-  };
+  selector?: string;
 }
 
 export async function createHydrationBundle(options: CreateHydrationBundleOptions) {
-
+  const code = template(options.pathToFile, options?.import, options?.props, options?.selector);
+  const result = await bundleInlineCode(code, { loader: 'tsx' });
+  if (result.success) {
+    return result.outputs.map((output) => output);
+  }
+  return null;
 }
 
-function template<Props extends React.JSX.IntrinsicAttributes = Record<string, unknown>>(pathToFile: string, name?: 'default' | string = 'default', props?: Props) {
+function template<Props extends React.JSX.IntrinsicAttributes = Record<string, unknown>>(pathToFile: string, name: 'default' | string = 'default', props?: Props, selector: string = '#app') {
   return `import React from 'react';
   import { hydrateRoot } from 'react-dom/client';
   import ${name === 'default' ? 'App' : `{ ${name} }`} from '${$relative(pathToFile)}';
 
+  const element = document.querySelector('${selector}');
   const props = JSON.parse("${JSON.stringify(props)}");
-  hydrateRoot();
-  `
+  hydrateRoot(element, <${name === 'default' ? 'App' : name} {...props} />);
+  `;
 }
