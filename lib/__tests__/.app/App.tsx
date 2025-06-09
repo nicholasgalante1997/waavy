@@ -8,6 +8,6 @@ export default function App() {
   return (
     <Document>
       <p>Static React App Body</p>
-    </Document>     
+    </Document>
   );
 }

@@ -37,11 +37,7 @@
 
 import path from "path";
 
-import {
-  dehydrate,
-  QueryClient,
-  type UseQueryOptions
-} from "@tanstack/react-query";
+import { dehydrate, QueryClient, type UseQueryOptions } from "@tanstack/react-query";
 
 import { loadModule } from "@/server";
 
@@ -55,7 +51,7 @@ type TanstackReactQueryConfig = {
 };
 
 export async function dehydrateServerSideQueries(
-  tanstackReactQueryConfig: TanstackReactQueryConfig
+  tanstackReactQueryConfig: TanstackReactQueryConfig,
 ) {
   const queryClient = new QueryClient();
   for (const query of tanstackReactQueryConfig.prefetch) {
@@ -64,16 +60,14 @@ export async function dehydrateServerSideQueries(
 
     if (typeof query.queryFn === "string") {
       const resolved = path.resolve(
-        query.queryFn.startsWith("/")
-          ? query.queryFn
-          : path.join(process.cwd(), query.queryFn)
+        query.queryFn.startsWith("/") ? query.queryFn : path.join(process.cwd(), query.queryFn),
       );
       queryFn = await loadModule(resolved);
     } else {
       const resolved = path.resolve(
         query.queryFn.path.startsWith("/")
           ? query.queryFn.path
-          : path.join(process.cwd(), query.queryFn.path)
+          : path.join(process.cwd(), query.queryFn.path),
       );
       queryFn = await loadModule(resolved, query.queryFn.module);
     }

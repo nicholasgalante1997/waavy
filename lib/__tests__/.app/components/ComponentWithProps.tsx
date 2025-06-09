@@ -1,9 +1,9 @@
-import React from 'react';
+import React from "react";
 
 type Props = {
-    message: string;
+  message: string;
 };
 
 export default function ComponentWithProps({ message }: Props) {
-    return <h2>{message}</h2>;
+  return <h2>{message}</h2>;
 }

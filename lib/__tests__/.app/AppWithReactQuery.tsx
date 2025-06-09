@@ -17,4 +17,4 @@ function AppWithReactQuery() {
   );
 }
 
-export default AppWithReactQuery
+export default AppWithReactQuery;
