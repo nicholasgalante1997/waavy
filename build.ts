@@ -1,7 +1,7 @@
 export {};
 
 await Bun.build({
-  entrypoints: ['lib/cli.tsx'],
+  entrypoints: ['lib/cli.ts'],
   outdir: 'out',
   target: 'bun',
   format: 'esm',

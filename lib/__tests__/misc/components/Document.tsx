@@ -1,8 +1,8 @@
 import React from "react";
 
 type Props = {
-  children: React.ReactNode
-}
+  children: React.ReactNode;
+};
 
 export default function Document({ children }: Props) {
   return (
