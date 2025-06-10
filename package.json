@@ -19,6 +19,7 @@
     "bundle:cli:executable-linux-arm64": "bun build --compile --minify --sourcemap --bytecode --target=bun-linux-arm64 lib/cli.tsx --outfile=out/waavy-linux-arm64",
     "bundle:cli:executable-windows-x64-modern": "bun build --compile --minify --sourcemap --bytecode --target=bun-windows-x64-modern lib/cli.tsx --outfile=out/waavy-windows-x64-modern",
     "bundle:cli:executable-windows-x64-baseline": "bun build --compile --minify --sourcemap --bytecode --target=bun-windows-x64-baseline lib/cli.tsx --outfile=out/waavy-windows-x64-baseline",
+    "prebuild": "rm -rf out",
     "build": "run-s check-types bundle:cli:*",
     "test": "bun test"
   },
