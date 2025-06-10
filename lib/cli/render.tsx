@@ -3,7 +3,13 @@ import type { RenderToReadableStreamOptions } from "react-dom/server";
 import type { Command } from "commander";
 import fs from "fs";
 
-import { pipeComponentToStdout, pipeComponent, pipeComponentToNodeStream } from "@/server";
+import { createHydrationBundle } from "../browser";
+import {
+  pipeComponentToStdout,
+  pipeComponent,
+  pipeComponentToNodeStream,
+  pipeComponentToCollectedString,
+} from "@/server";
 import type { RenderOptions } from "@/types";
 import { $load, $relative } from "@/utils";
 
@@ -35,11 +41,74 @@ type RenderActionOptions = {
    * Instead of piping the rendered component to stdout, it will pipe the component to a supplied named pipe. Pretty experimental currently.
    */
   pipe?: string;
+
+  /**
+   * If true, the result of the render operation will be collected as streamed,
+   * and then passed in a final state to stdout, equivocal to an all or none op.
+   */
+  await?: boolean;
+
+  /**
+   * Whether to include a client side javascript bundle.
+   * This calls import('react-dom/client').hydrateRoot on your component,
+   * in a module javascript bundle that is embedded into our server generated markup.
+   */
+  hydrate?: boolean;
+
+  /**
+   * Write to stdout in a serialized structured format
+   * Currently supports JSON
+   */
+  serialize?: "json";
+
+  /**
+   * The selector to use when hydrating the component.
+   * @default "#app"
+   */
+  selector?: string;
 };
 
 const renderAction: RenderAction = async (pathToComponent, options) => {
   const Component = await $load(pathToComponent, options.name);
   let props = await getLoaderProvisionedProps(options, getPropsFromOptions(options));
+
+  /** render options */
+  const ro: RenderToReadableStreamOptions = {};
+
+  if (options?.hydrate) {
+    try {
+      const bundleResult = await createHydrationBundle({
+        pathToFile: pathToComponent,
+        import: options.name,
+        props,
+        selector: options.selector,
+      });
+      if (!bundleResult || !bundleResult.length) {
+        throw new Error("Failed to create hydration bundle");
+      }
+      const hydrationBundle = await bundleResult[0].text();
+      ro.bootstrapScriptContent = hydrationBundle;
+    } catch (e) {
+
+    }
+  }
+
+  if (options?.await || options?.serialize) {
+    const markup = await pipeComponentToCollectedString(<Component {...props} />);
+
+    if (options?.serialize) {
+      if (options.serialize === "json") {
+        process.stdout.write(JSON.stringify({ html: markup, exitCode: 0, props }));
+        return;
+      }
+    }
+
+    if (options?.await) {
+      process.stdout.write(markup);
+      return;
+    }
+  }
+
   if (options?.pipe) {
     return await pipeComponentToNamedPipe(options, Component, props);
   }
@@ -74,6 +143,17 @@ export function setupRenderAction(program: Command) {
     .option(
       "--pipe <path-to-pipe>",
       "Instead of piping the rendered component to stdout, it will pipe the component to a supplied named pipe. Pretty experimental currently.",
+    )
+    .option("--request <request>", "The request object to pass to the loader function.", "{}")
+    .option(
+      "--await",
+      "If true, the result of the render operation will be collected as streamed, and then passed in a final state to stdout, equivocal to an all or none op.",
+      false,
+    )
+    .option(
+      "--serialize <format>",
+      "Write to stdout in a serialized structured format Currently supports JSON",
+      false,
     )
     .action(renderAction);
 

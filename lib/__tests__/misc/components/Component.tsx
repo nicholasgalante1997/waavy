@@ -2,7 +2,7 @@ import React from "react";
 
 export default function Component() {
   /** Mock State */
-  const [state,] = React.useState(0);
+  const [state] = React.useState(0);
 
   /** Mock Lifecycle Hook (Effect) */
   React.useEffect(() => {

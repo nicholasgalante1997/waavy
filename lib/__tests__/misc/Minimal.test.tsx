@@ -1,8 +1,8 @@
-import { describe, test, expect } from 'bun:test';
+import { describe, test, expect } from "bun:test";
 import React from "react";
 import Document from "./components/Document";
 
-import { pipeComponentToWritableCallback } from '../../server';
+import { pipeComponentToWritableCallback } from "../../server";
 
 function App() {
   return (
@@ -13,10 +13,10 @@ function App() {
 }
 
 describe("<Minimal />", () => {
-    test("`pipeComponentToWritableCallback` Renders <Minimal /> and returns HTML", async () => {
-      let stream = "";
-      const component = <App />;
-      await pipeComponentToWritableCallback(component, (chunk) => (stream += chunk));
-      expect(stream).toContain("<p>Static React App Body</p>");
-    });
-})
+  test("`pipeComponentToWritableCallback` Renders <Minimal /> and returns HTML", async () => {
+    let stream = "";
+    const component = <App />;
+    await pipeComponentToWritableCallback(component, (chunk) => (stream += chunk));
+    expect(stream).toContain("<p>Static React App Body</p>");
+  });
+});

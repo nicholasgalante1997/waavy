@@ -19,20 +19,25 @@ interface CreateHydrationBundleOptions<Props = Record<string, unknown>> {
 
 export async function createHydrationBundle(options: CreateHydrationBundleOptions) {
   const code = template(options.pathToFile, options?.import, options?.props, options?.selector);
-  const result = await bundleInlineCode(code, { loader: 'tsx' });
+  const result = await bundleInlineCode(code, { loader: "tsx" });
   if (result.success) {
     return result.outputs.map((output) => output);
   }
   return null;
 }
 
-function template<Props extends React.JSX.IntrinsicAttributes = Record<string, unknown>>(pathToFile: string, name: 'default' | string = 'default', props?: Props, selector: string = '#app') {
+function template<Props extends React.JSX.IntrinsicAttributes = Record<string, unknown>>(
+  pathToFile: string,
+  name: "default" | string = "default",
+  props?: Props,
+  selector: string = "#app",
+) {
   return `import React from 'react';
   import { hydrateRoot } from 'react-dom/client';
-  import ${name === 'default' ? 'App' : `{ ${name} }`} from '${$relative(pathToFile)}';
+  import ${name === "default" ? "App" : `{ ${name} }`} from '${$relative(pathToFile)}';
 
   const element = document.querySelector('${selector}');
   const props = JSON.parse("${JSON.stringify(props)}");
-  hydrateRoot(element, <${name === 'default' ? 'App' : name} {...props} />);
+  hydrateRoot(element, <${name === "default" ? "App" : name} {...props} />);
   `;
 }

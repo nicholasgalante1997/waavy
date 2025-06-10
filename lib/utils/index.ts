@@ -1,9 +1,9 @@
-import { writeFile, unlink, mkdtemp, rmdir } from 'fs/promises';
-import { tmpdir } from 'os';
-import path, { join } from 'path';
+import { writeFile, unlink, mkdtemp, rmdir } from "fs/promises";
+import { tmpdir } from "os";
+import path, { join } from "path";
 import { fileURLToPath } from "url";
 
-import browserBuildConf from '../config/build.browser';
+import browserBuildConf from "../config/build.browser";
 
 export async function $load(filepath: string, name: string = "default") {
   const resolved = path.resolve(
@@ -28,44 +28,42 @@ export function $relative(targetPath: string, fromUrl: string = import.meta.url)
 }
 
 interface BundleInlineOptions {
-  loader: 'js' | 'jsx' | 'ts' | 'tsx';
-  target?: 'browser' | 'node' | 'bun';
-  format?: 'esm' | 'cjs' | 'iife';
+  loader: "js" | "jsx" | "ts" | "tsx";
+  target?: "browser" | "node" | "bun";
+  format?: "esm" | "cjs" | "iife";
   minify?: boolean;
 }
 
 export async function bundleInlineCode(
-  code: string, 
-  options: BundleInlineOptions = { loader: 'tsx' }
+  code: string,
+  options: BundleInlineOptions = { loader: "tsx" },
 ) {
-  
   const extensions = {
-    js: '.js',
-    jsx: '.jsx', 
-    ts: '.ts',
-    tsx: '.tsx'
+    js: ".js",
+    jsx: ".jsx",
+    ts: ".ts",
+    tsx: ".tsx",
   };
-  
+
   // Create temp directory
-  const tempDir = await mkdtemp(join(tmpdir(), 'waavy'));
+  const tempDir = await mkdtemp(join(tmpdir(), "waavy"));
   const tempFile = join(tempDir, `bundle${extensions[options?.loader]}`);
-  
+
   try {
     // Write code to temp file
-    await writeFile(tempFile, code, 'utf8');
-    
+    await writeFile(tempFile, code, "utf8");
+
     // Bundle it
     const result = await Bun.build({
       ...browserBuildConf,
       entrypoints: [tempFile],
     });
-    
+
     if (!result.success) {
-      throw new Error(`Bundle failed: ${result.logs.map(log => log.message).join('\n')}`);
+      throw new Error(`Bundle failed: ${result.logs.map((log) => log.message).join("\n")}`);
     }
-    
+
     return result;
-    
   } finally {
     // Cleanup temp files
     try {
@@ -73,7 +71,7 @@ export async function bundleInlineCode(
       await rmdir(tempDir);
     } catch (cleanupError) {
       // Log but don't throw cleanup errors
-      console.warn('Failed to cleanup temp files:', cleanupError);
+      console.warn("Failed to cleanup temp files:", cleanupError);
     }
   }
 }

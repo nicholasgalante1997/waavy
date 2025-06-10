@@ -43,6 +43,16 @@ export async function pipeComponentToWritableCallback(
   }
 }
 
+export async function pipeComponentToCollectedString(
+  component: React.ReactElement,
+  options: ReactDOMServer.RenderToReadableStreamOptions = {},
+  init?: string,
+) {
+  let stream = init || "";
+  await pipeComponentToWritableCallback(component, (chunk) => (stream += chunk), options);
+  return stream;
+}
+
 export async function pipeComponentToStdout(
   component: React.ReactElement,
   options: ReactDOMServer.RenderToReadableStreamOptions = {},
