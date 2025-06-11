@@ -9,7 +9,7 @@ program
   .name("@supra-dev/react")
   .version("1.0.0-alpha.1")
   .description(
-    "A library to support rendering React components in non-js server environments"
+    "A library to support rendering React components in non-js server environments",
   );
 
 program

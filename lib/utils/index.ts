@@ -9,7 +9,10 @@ export async function $load(filepath: string, name: string = "default") {
   return loadedModule[name] || null;
 }
 
-export function $relative(targetPath: string, fromUrl: string = import.meta.url): string {
+export function $relative(
+  targetPath: string,
+  fromUrl: string = import.meta.url,
+): string {
   // Convert URL to file path
   const fromFilePath = fileURLToPath(fromUrl);
   const fromDir = path.dirname(fromFilePath);
@@ -22,4 +25,3 @@ export function $relative(targetPath: string, fromUrl: string = import.meta.url)
   // Return relative path
   return path.relative(fromDir, resolvedTarget);
 }
-

@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach, mock, spyOn } from "bun:test";
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  mock,
+  spyOn,
+} from "bun:test";
 import React from "react";
 import * as ReactDOMServer from "react-dom/server";
 import { Writable } from "stream";
@@ -12,8 +20,8 @@ import {
   pipeComponentToNodeStream,
 } from "@/server";
 
-
-const SimpleComponent = () => React.createElement("div", { id: "test" }, "Hello World");
+const SimpleComponent = () =>
+  React.createElement("div", { id: "test" }, "Hello World");
 const ComponentWithProps = ({ name, age }: { name: string; age: number }) =>
   React.createElement("div", null, `Hello ${name}, age ${age}`);
 const NestedComponent = () =>
@@ -34,7 +42,10 @@ describe("transformComponentToString", () => {
   });
 
   it("should render component with props to string", () => {
-    const component = React.createElement(ComponentWithProps, { name: "John", age: 25 });
+    const component = React.createElement(ComponentWithProps, {
+      name: "John",
+      age: 25,
+    });
     const result = transformComponentToString(component);
 
     expect(result).toContain("Hello John, age 25");
@@ -137,7 +148,9 @@ describe("transformComponentToReadableStream", () => {
       React.createElement(
         "div",
         null,
-        Array.from({ length: 1000 }, (_, i) => React.createElement("p", { key: i }, `Item ${i}`)),
+        Array.from({ length: 1000 }, (_, i) =>
+          React.createElement("p", { key: i }, `Item ${i}`),
+        ),
       );
 
     const component = React.createElement(LargeComponent);
@@ -179,7 +192,9 @@ describe("pipeComponent", () => {
       },
     });
 
-    await expect(pipeComponent(component, errorStream)).rejects.toThrow("Write failed");
+    await expect(pipeComponent(component, errorStream)).rejects.toThrow(
+      "Write failed",
+    );
   });
 
   it("should pass options to stream creation", async () => {
@@ -259,7 +274,8 @@ describe("pipeComponentToWritableCallback", () => {
   });
 
   it("should decode chunks correctly", async () => {
-    const UnicodeComponent = () => React.createElement("div", null, "🚀 Hello 世界");
+    const UnicodeComponent = () =>
+      React.createElement("div", null, "🚀 Hello 世界");
     const component = React.createElement(UnicodeComponent);
     const chunks: string[] = [];
 
@@ -301,7 +317,9 @@ describe("pipeComponentToStdout", () => {
     expect(stdoutWriteSpy).toHaveBeenCalled();
 
     // Verify all writes contain valid HTML
-    const allWrites = stdoutWriteSpy.mock.calls.map((call: any) => call[0]).join("");
+    const allWrites = stdoutWriteSpy.mock.calls
+      .map((call: any) => call[0])
+      .join("");
     expect(allWrites).toContain('<div class="container">');
     expect(allWrites).toContain("<h1>Title</h1>");
   });
@@ -314,7 +332,9 @@ describe("pipeComponentToStdout", () => {
     expect(stdoutWriteSpy).toHaveBeenCalled();
 
     // Verify all writes contain valid HTML
-    const allWrites = stdoutWriteSpy.mock.calls.map((call: any) => call[0]).join("");
+    const allWrites = stdoutWriteSpy.mock.calls
+      .map((call: any) => call[0])
+      .join("");
     expect(allWrites).toContain("stdout-test.js");
   });
 });
@@ -347,9 +367,9 @@ describe("pipeComponentToNodeStream", () => {
       },
     }) as WriteStream;
 
-    await expect(pipeComponentToNodeStream(component, errorWriteStream)).rejects.toThrow(
-      "Write stream error",
-    );
+    await expect(
+      pipeComponentToNodeStream(component, errorWriteStream),
+    ).rejects.toThrow("Write stream error");
   });
 
   it("should handle ReadableStream conversion errors", async () => {
@@ -361,9 +381,9 @@ describe("pipeComponentToNodeStream", () => {
 
     const mockWriteStream = new Writable() as WriteStream;
 
-    await expect(pipeComponentToNodeStream(component, mockWriteStream)).rejects.toThrow(
-      "Stream creation failed",
-    );
+    await expect(
+      pipeComponentToNodeStream(component, mockWriteStream),
+    ).rejects.toThrow("Stream creation failed");
 
     renderStreamSpy.mockRestore();
   });
@@ -439,7 +459,11 @@ describe("Integration tests", () => {
       React.createElement(
         "html",
         null,
-        React.createElement("head", null, React.createElement("title", null, title)),
+        React.createElement(
+          "head",
+          null,
+          React.createElement("title", null, title),
+        ),
         React.createElement(
           "body",
           null,
@@ -458,7 +482,9 @@ describe("Integration tests", () => {
         ),
       );
 
-    const component = React.createElement(ComplexComponent, { title: "Test Page" });
+    const component = React.createElement(ComplexComponent, {
+      title: "Test Page",
+    });
 
     // Test string rendering
     const stringResult = transformComponentToString(component);

@@ -35,10 +35,13 @@ export async function pipeComponentToWritableCallback(
   const stream = await transformComponentToReadableStream(component, options);
   const reader = stream.getReader();
   const decoder = new TextDecoder();
-  let result: Bun.ReadableStreamDefaultReadResult<any> = { value: undefined, done: false };
+  let result: Bun.ReadableStreamDefaultReadResult<any> = {
+    value: undefined,
+    done: false,
+  };
   while (!result.done) {
     result = await reader.read();
-    let chunk = decoder.decode(result.value);
+    const chunk = decoder.decode(result.value);
     cb(chunk);
   }
 }
@@ -49,7 +52,11 @@ export async function pipeComponentToCollectedString(
   init?: string,
 ) {
   let stream = init || "";
-  await pipeComponentToWritableCallback(component, (chunk) => (stream += chunk), options);
+  await pipeComponentToWritableCallback(
+    component,
+    (chunk) => (stream += chunk),
+    options,
+  );
   return stream;
 }
 
@@ -57,7 +64,11 @@ export async function pipeComponentToStdout(
   component: React.ReactElement,
   options: ReactDOMServer.RenderToReadableStreamOptions = {},
 ) {
-  await pipeComponentToWritableCallback(component, (chunk) => process.stdout.write(chunk), options);
+  await pipeComponentToWritableCallback(
+    component,
+    (chunk) => process.stdout.write(chunk),
+    options,
+  );
 }
 
 // Convert Web ReadableStream to Node.js Readable stream
@@ -80,13 +91,15 @@ function webStreamToNodeStream(webStream: ReadableStream): Readable {
   });
 }
 
-// New function to pipe to Node.js WriteStream (for named pipes)
 export async function pipeComponentToNodeStream(
   component: React.ReactElement,
   nodeWriteStream: WriteStream,
   options: ReactDOMServer.RenderToReadableStreamOptions = {},
 ) {
-  const webStream = await transformComponentToReadableStream(component, options);
+  const webStream = await transformComponentToReadableStream(
+    component,
+    options,
+  );
   const nodeReadableStream = webStreamToNodeStream(webStream);
 
   return new Promise<void>((resolve, reject) => {
