@@ -29,7 +29,7 @@ if (
     https://github.com/nicholasgalante1997/waavy/issues/new/
     If you are on a supported platform and still see this message, please check your Node.js version and ensure it is up to date.
     Supported Node.js versions: 20.x, 22.x, 24.x
-    Supported Bun versions: ALL (BUN FOREVER 🥟)
+    Supported Bun versions: 1.x
     `);
   process.exit(1);
 }

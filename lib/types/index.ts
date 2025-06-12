@@ -1,4 +1,4 @@
-export type RSSRConfiguration = {
+export type RenderOptions = {
   /**
    * If your application uses react-query, you can opt into server side rendering (prefetching) all your react-query queries here
    * This will help with the initial load time of your application

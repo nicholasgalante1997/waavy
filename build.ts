@@ -4,7 +4,29 @@ import { mkdir } from "fs/promises";
 import path from "path";
 import util from "util";
 
+import Package from "./package.json";
+
 const log = debug("waavy:build");
+const outdir = path.join(process.cwd(), "out");
+const external = Object.keys(Package.peerDependencies);
+
+const sources = {
+  cli: "lib/cli.tsx",
+  exports: {
+    server: "lib/exports/server.ts",
+    browser: "lib/exports/browser.ts",
+  },
+};
+
+const defaultBuildOptions: Partial<Bun.BuildConfig> = {
+  external,
+  outdir,
+  minify: true,
+  sourcemap: "linked" as const,
+  splitting: false,
+  root: "./lib",
+  packages: "bundle" as const,
+};
 
 type Options = {
   js?: boolean;
@@ -15,66 +37,41 @@ type Options = {
   help?: boolean;
 };
 
-const baseConfig = {
-  entrypoints: ["lib/cli.tsx"],
-  outdir: "out",
-  minify: true,
-  sourcemap: "linked" as const,
-  bytecode: true,
-  splitting: false,
-  root: "./lib",
-  packages: "bundle" as const,
-  external: ["react", "react-dom", "@tanstack/react-query"],
-};
-
 const targets = [
   {
     name: "waavy-linux-x64-modern",
     target: "bun-linux-x64-modern",
     platform: "Linux x64 (modern)",
-    format: null,
   },
   {
     name: "waavy-linux-x64-baseline",
     target: "bun-linux-x64-baseline",
     platform: "Linux x64 (baseline)",
-    format: null,
   },
   {
     name: "waavy-macos-x64",
     target: "bun-darwin-x64",
     platform: "macOS x64",
-    format: null,
   },
   {
     name: "waavy-macos-arm64",
     target: "bun-darwin-arm64",
     platform: "macOS ARM64",
-    format: null,
   },
   {
     name: "waavy-linux-arm64",
     target: "bun-linux-arm64",
     platform: "Linux ARM64",
-    format: null,
   },
   {
     name: "waavy-windows-x64-modern",
     target: "bun-windows-x64-modern",
     platform: "Windows x64 (modern)",
-    format: null,
   },
   {
     name: "waavy-windows-x64-baseline",
     target: "bun-windows-x64-baseline",
     platform: "Windows x64 (baseline)",
-    format: null,
-  },
-  {
-    name: "waavy.js",
-    target: "bun",
-    platform: "*",
-    format: "esm",
   },
 ];
 
@@ -116,8 +113,8 @@ program.parse(process.argv);
 
 async function ensureOutDir() {
   try {
-    await mkdir(baseConfig.outdir!, { recursive: true });
-    log.extend("debug")(`Created output directory: ${baseConfig.outdir}`);
+    await mkdir(outdir, { recursive: true });
+    log.extend("debug")(`Created output directory: ${outdir}`);
   } catch (error) {
     log.extend("warn")(
       `Output directory already exists or couldn't be created: ${error}`
@@ -125,39 +122,45 @@ async function ensureOutDir() {
   }
 }
 
-async function buildBunRuntimeOutput(verbose = false) {
-  const startTime = performance.now();
+async function buildSources(verbose = false) {
+  const bunRuntimeOutputs = [sources.cli];
+  const nodeRuntimeOutputs = [sources.exports.browser, sources.exports.server];
 
-  try {
-    const result = await Bun.build({
-      ...baseConfig,
-      entrypoints: [...baseConfig.entrypoints!],
-      bytecode: false,
-      target: 'bun',
-      format: 'esm',
-    });
+  let succeeded = true;
 
-    if (result.success) {
-      const duration = Math.round(performance.now() - startTime);
-      log(`JavaScript bundle built in ${duration}ms`);
-      if (verbose) {
-        result.outputs.forEach((output) => {
-          log.extend("debug")(
-            `Generated: ${output.path} (${Math.round(output.size / 1024)}KB)`
-          );
-        });
-      }
-    } else {
-      log.extend("error")("JavaScript build failed:");
-      result.logs.forEach((buildLog) => console.error(buildLog));
-      return false;
+  for (const bunOutput of bunRuntimeOutputs) {
+    const startTime = performance.now();
+    try {
+      const result = await Bun.build({
+        ...defaultBuildOptions,
+        entrypoints: [bunOutput],
+        target: "bun",
+        format: "esm",
+      });
+      handleBunBuildOutput(result, startTime, verbose);
+    } catch (error) {
+      log.extend("error")(`JavaScript build failed: ${error}`);
+      succeeded = false;
     }
-  } catch (error) {
-    log.extend("error")(`JavaScript build failed: ${error}`);
-    return false;
   }
 
-  return true;
+  for (const bunOutput of bunRuntimeOutputs) {
+    const startTime = performance.now();
+    try {
+      const result = await Bun.build({
+        ...defaultBuildOptions,
+        entrypoints: [bunOutput],
+        target: "bun",
+        format: "esm",
+      });
+      handleBunBuildOutput(result, startTime, verbose);
+    } catch (error) {
+      log.extend("error")(`JavaScript build failed: ${error}`);
+      succeeded = false;
+    }
+  }
+
+  return succeeded;
 }
 
 async function buildExecutable(
@@ -165,21 +168,23 @@ async function buildExecutable(
   verbose = false
 ) {
   const startTime = performance.now();
-  const outfile = path.join(baseConfig.outdir!, targetConfig.name);
+  const outfile = path.join(outdir, targetConfig.name);
 
   try {
-    // Build the executable using Bun's CLI --compile flag
+    /**
+     * Currently, there is no Javascript API for Bun's "Single File Executable"
+     * And so in order to build the executable, we have to use the CLI based build api
+     * @see https://bun.sh/docs/bundler/executables
+     */
     const buildCommand: string[] = [
       "bun",
       "build",
       "--compile",
       "--minify",
       "--sourcemap",
-      "--bytecode",
       `--target=${targetConfig.target}`,
       `--outfile=${outfile}`,
-      // Add external packages
-      ...baseConfig.external!.map((pkg) => `--external=${pkg}`),
+      ...external.map((pkg) => `--external=${pkg}`),
       baseConfig.entrypoints?.at(0) as string, // Entry point goes last
     ];
 
@@ -243,12 +248,12 @@ async function buildExecutables(specificTarget?: string, verbose = false) {
 
   let successCount = 0;
 
-  for (let i = 0; i < targets.length - 1; i++) {
+  for (let i = 0; i < targets.length; i++) {
     const success = await buildExecutable(matches[i], verbose);
     if (success) successCount++;
   }
 
-  if (successCount === targets.length - 1) {
+  if (successCount === targets.length) {
     log(`All ${targets.length} executables built successfully!`);
     return true;
   } else {
@@ -270,7 +275,6 @@ async function build(options: Options) {
     debug.enable("waavy:*");
     log(`Verbose logging enabled!`);
     log(util.inspect(options, true, 4, true));
-    log(util.inspect(baseConfig, true, 4, true));
     log(util.inspect(targets, true, 4, true));
   }
 
@@ -299,4 +303,26 @@ async function build(options: Options) {
     log.extend("error")(`💥 Build failed after ${totalDuration}ms`);
     process.exit(1);
   }
-};
+}
+
+function handleBunBuildOutput(
+  output: Awaited<ReturnType<typeof Bun.build>>,
+  startTime?: number,
+  verbose = false
+) {
+  if (output.success) {
+    const duration = Math.round(performance.now() - (startTime || 0));
+    log(`JavaScript bundle built in ${duration}ms`);
+    if (verbose) {
+      output.outputs.forEach((output) => {
+        log.extend("debug")(
+          `Generated: ${output.path} (${Math.round(output.size / 1024)}KB)`
+        );
+      });
+    }
+  } else {
+    log.extend("error")("JavaScript build failed:");
+    output.logs.forEach((buildLog) => console.error(buildLog));
+    throw new Error("JavaScript build failed");
+  }
+}

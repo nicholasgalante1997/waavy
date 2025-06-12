@@ -1,28 +1,26 @@
 import { Command } from "commander";
+import Package from '../package.json';
+import { setupProgramActions, setupProgramMetadata } from "./cli/index";
+import { setupRenderAction } from "./cli/render";
 
-import { pipeComponentToStdout } from "./server";
-import { $load } from "./utils";
+/**
+ * What does this file actually need to do?
+ *
+ * 1. Load a React Component from a given path, with a provided or assumed module name
+ * 2. Load props either via,
+ *  - serializable input as an argument
+ *  - a path to a JSON file
+ *  - a loader function
+ *
+ * 3. Create a client side hydrate bundle (Optional for static sites)
+ * 4. Determine an output format
+ * 5. Render the component with props into the desired output format
+ *
+ */
 
 const program = new Command();
 
-program
-  .name("@supra-dev/react")
-  .version("1.0.0-alpha.1")
-  .description(
-    "A library to support rendering React components in non-js server environments",
-  );
-
-program
-  .command("render")
-  .description("Render a React component into a stdout stream")
-  .argument("<component>", "The path to the component to render")
-  .option("-P, --props <props>", "The props to pass to the component")
-  .option("-N, --name <name>", "The name of the component", "default")
-  .option("-C, --config <config>", "The path to the config file", "./.rssrc")
-  .action(async (component, options) => {
-    const Component = await $load(component, options.name);
-    const props = options?.props ? JSON.parse(options.props) : {};
-    await pipeComponentToStdout(<Component {...props} />);
-  });
+setupProgramMetadata(program, Package.version);
+setupProgramActions(program, [setupRenderAction]);
 
 program.parse(process.argv);

@@ -44,6 +44,7 @@ import {
 } from "@tanstack/react-query";
 
 import { $load } from "@/utils";
+import type { RenderOptions } from "@/types";
 
 type PrefetchQueryOptions = {
   queryKey: string | string[];
@@ -89,4 +90,17 @@ export async function dehydrateServerSideQueries(
   return {
     dehydratedState: dehydrate(queryClient),
   };
+}
+
+export async function extendRenderWithTanstackQueryServerSideDataFetching<Props = {}>(
+  trqOptions: RenderOptions & { props: Props },
+) {
+  const dehydratedState = await dehydrateServerSideQueries({
+    prefetch: trqOptions.tanstackReactQuery?.prefetch!,
+  });
+  Object.defineProperty(trqOptions.props, "dehydratedState", {
+    value: dehydratedState.dehydratedState,
+    writable: false,
+    enumerable: true,
+  });
 }
