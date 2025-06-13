@@ -2,7 +2,8 @@ import React from "react";
 
 import fs from "fs/promises";
 import { tmpdir } from "os";
-import { join } from "path";
+import { join, dirname } from "path";
+import { pathToFileURL } from "url";
 
 import { $relative } from "@/utils";
 
@@ -68,12 +69,15 @@ export default class Hydra<Props> {
   }
 
   async createBundle<Props>() {
+    const tmpFile = await getTempFilePath(this.extension || "tsx");
+    console.log({tmpFile, pathToComponent: this.pathToComponent, relative: $relative(this.pathToComponent!, pathToFileURL(tmpFile).href)});
     try {
       const result = await bundleInlineCode(
-        getHydraTemplate(this.pathToComponent!, this.props!, {
+        getHydraTemplate(this.pathToComponent!, tmpFile, this.props!, {
           name: this.nonDefaultComponentName,
           selector: this.selector,
         }),
+        tmpFile,
         {
           loader: this.extension || "tsx",
         },
@@ -118,6 +122,7 @@ interface BundleInlineOptions {
 
 export async function bundleInlineCode(
   code: string,
+  tempFile: string,
   options: BundleInlineOptions = { loader: "tsx" },
   buildOptionOverrides: Partial<Bun.BuildConfig> = {}
 ) {
@@ -127,9 +132,6 @@ export async function bundleInlineCode(
     ts: ".ts",
     tsx: ".tsx",
   };
-
-  const tempDir = await fs.mkdtemp(join(tmpdir(), "waavy-"));
-  const tempFile = join(tempDir, `bundle${extensions[options?.loader]}`);
 
   try {
     await fs.writeFile(tempFile, code, "utf8");
@@ -158,7 +160,7 @@ export async function bundleInlineCode(
   } finally {
     try {
       await fs.unlink(tempFile);
-      await fs.rmdir(tempDir);
+      await fs.rmdir(dirname(tempFile));
     } catch (cleanupError) {
       console.warn("Failed to cleanup temp files:", cleanupError);
     }
@@ -172,10 +174,11 @@ type HydraTemplateOptions = {
 
 function getHydraTemplate<Props>(
   pathToComponent: string,
+  pathToTmpFile: string,
   props: Props,
   options: HydraTemplateOptions
 ) {
-  return `import React from "react";import { hydrateRoot } from "react-dom/client";import ${getImportName(options?.name)} from "${$relative(pathToComponent, import.meta.url)}";const props = JSON.parse("${JSON.stringify(props)}");hydrateRoot(document.querySelector("${options?.selector || "#waavyroot"}"), <${getComponentName(options?.name)} {...props} />);`;
+  return `import React from "react";import { hydrateRoot } from "react-dom/client";import ${getImportName(options?.name)} from "${$relative(pathToComponent, pathToTmpFile)}";const props = JSON.parse("${JSON.stringify(props)}");hydrateRoot(document.querySelector("${options?.selector || "#waavyroot"}"), <${getComponentName(options?.name)} {...props} />);`;
 }
 
 function getImportName(name?: string) {
@@ -186,4 +189,10 @@ function getImportName(name?: string) {
 function getComponentName(name?: string) {
   name ||= "default";
   return name === "default" ? "WaavyApp" : name;
+}
+
+async function getTempFilePath(extension: string) {
+  const tempDir = await fs.mkdtemp(join(tmpdir(), "waavy-"));
+  const tempFile = join(tempDir, `bundle${extension}`);
+  return tempFile;
 }

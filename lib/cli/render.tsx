@@ -8,8 +8,8 @@ import {
   pipeComponentToNodeStream,
   pipeComponentToCollectedString,
 } from "@/server";
-import type { RenderOptions } from "@/types";
 import { $load, $relative } from "@/utils";
+import Hydra from "@/browser/models/Hydra";
 
 type RenderAction = (pathToComponent: string, options: RenderActionOptions) => void;
 type RenderActionOptions = {
@@ -54,6 +54,12 @@ type RenderActionOptions = {
   hydrate?: boolean;
 
   /**
+   * Any files you want to bootstrap on the client.
+   * This is typically used for client side hydration of the React app.
+   */
+  bootstrap?: string[];
+
+  /**
    * Write to stdout in a serialized structured format
    * Currently supports JSON
    */
@@ -69,6 +75,30 @@ type RenderActionOptions = {
 const renderAction: RenderAction = async (pathToComponent, options) => {
   const Component = await $load(pathToComponent, options.name);
   let props = await getLoaderProvisionedProps(options, getPropsFromOptions(options));
+
+  const renderOptions: RenderToReadableStreamOptions = {
+    bootstrapModules: options?.bootstrap,
+                      
+  };
+
+  if (options?.hydrate) {
+    console.log('Pausing, debugging hydration...');
+    const hydra = Hydra.create<typeof props>();
+    hydra
+      .setComponent(Component)
+      .setExtension("tsx")
+      .setPathToComponent(pathToComponent)
+      .setProps(props);
+
+    if (options?.name) {
+      hydra.setImportNonDefaultComponent(options.name);
+    }
+
+    const result = await hydra.createBundle();
+
+    console.log(result);
+    process.exit(0);
+  }
 
   if (options?.await || options?.serialize) {
     const markup = await pipeComponentToCollectedString(<Component {...props} />);
@@ -115,7 +145,12 @@ export function setupRenderAction(program: Command) {
     .option(
       "-h, --hydrate",
       "Whether to include a client side javascript bundle. This calls import('react-dom/client').hydrateRoot on your component in a module javascript bundle that is embedded into our server generated markup.",
-      true,
+      false,
+    )
+    .option(
+      "-b, --bootstrap [files-to-bootstrap...]",
+      "Any files you want to bootstrap on the client. This is typically used for client side hydration of the React app.",
+      [],
     )
     .option(
       "--pipe <path-to-pipe>",

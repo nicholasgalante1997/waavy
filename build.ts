@@ -128,6 +128,7 @@ async function buildSources(verbose = false) {
 
   let succeeded = true;
 
+  log("Starting bun runtime output generation...")
   for (const bunOutput of bunRuntimeOutputs) {
     const startTime = performance.now();
     try {
@@ -144,18 +145,20 @@ async function buildSources(verbose = false) {
     }
   }
 
-  for (const bunOutput of bunRuntimeOutputs) {
+  log("Starting node runtime output generation...")
+  for (const nodeOutput of nodeRuntimeOutputs) {
     const startTime = performance.now();
     try {
       const result = await Bun.build({
         ...defaultBuildOptions,
-        entrypoints: [bunOutput],
-        target: "bun",
+        root: "./lib/exports",
+        entrypoints: [nodeOutput],
+        target: nodeOutput.includes("browser") ? "browser" : "node",
         format: "esm",
       });
       handleBunBuildOutput(result, startTime, verbose);
     } catch (error) {
-      log.extend("error")(`JavaScript build failed: ${error}`);
+      log.extend("error")(`Node build failed: ${error}`);
       succeeded = false;
     }
   }
@@ -185,7 +188,7 @@ async function buildExecutable(
       `--target=${targetConfig.target}`,
       `--outfile=${outfile}`,
       ...external.map((pkg) => `--external=${pkg}`),
-      baseConfig.entrypoints?.at(0) as string, // Entry point goes last
+      sources.cli,
     ];
 
     log.extend("debug")(`Running: ${buildCommand.join(" ")}`);
@@ -286,7 +289,7 @@ async function build(options: Options) {
   let allSuccessful = true;
 
   if (shouldBuildJS) {
-    allSuccessful = (await buildBunRuntimeOutput(verbose)) && allSuccessful;
+    allSuccessful = (await buildSources(verbose)) && allSuccessful;
   }
 
   if (shouldBuildExecutables) {
