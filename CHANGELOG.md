@@ -21,6 +21,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+## [0.1.5] 06/15/2025
+
+### Added
+
+### Fixed
+
+- Sets up .npmrc in `npm publish` Github Action Workflow
+
+### Removed
+
+### Deprecated
+
+### Security
+
 ## [0.1.4] 06/15/2025
 
 ### Added

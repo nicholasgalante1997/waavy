@@ -38,8 +38,11 @@ jobs:
               continue-on-error: false
             - name: Build
               run: bun run build 
-
-            - name: Publish to npm
+            - name: Setup NPM Auth
+              run: echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
+              env:
+                NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+            - name: Publish to NPM
               run: npm publish
               env:
                 NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
