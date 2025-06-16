@@ -1,18 +1,18 @@
 import React from "react";
 import type { RenderToReadableStreamOptions } from "react-dom/server";
 import type { Command } from "commander";
-import fs from "fs";
+import path from "path";
 
 import {
   pipeComponentToStdout,
-  pipeComponentToNodeStream,
   pipeComponentToCollectedString,
 } from "@/server";
-import { $load, $relative } from "@/utils";
-import Hydra from "@/browser/models/Hydra";
+import Hydra from '@/server/models/Hydra';
+import { load } from "@/utils";
+import { getLoaderProvisionedProps, getPropsFromOptions, pipeComponentToNamedPipe } from "./utils";
 
-type RenderAction = (pathToComponent: string, options: RenderActionOptions) => void;
-type RenderActionOptions = {
+export type RenderAction = (pathToComponent: string, options: RenderActionOptions) => (void | Promise<void>);
+export type RenderActionOptions = {
   /**
    * The name of the component, if left blank, it assumes a default export
    * @default "default"
@@ -50,6 +50,10 @@ type RenderActionOptions = {
    * Whether to include a client side javascript bundle.
    * This calls import('react-dom/client').hydrateRoot on your component,
    * in a module javascript bundle that is embedded into our server generated markup.
+   * 
+   * This is currently a work in progress, meaning there's been little progress and it does not work.
+   * 
+   * 6/15/2025: Update, it might work
    */
   hydrate?: boolean;
 
@@ -73,35 +77,34 @@ type RenderActionOptions = {
 };
 
 const renderAction: RenderAction = async (pathToComponent, options) => {
-  const Component = await $load(pathToComponent, options.name);
+  const Component = await load(pathToComponent, options.name);
   let props = await getLoaderProvisionedProps(options, getPropsFromOptions(options));
+  const extension = path.extname(pathToComponent).replace(".", "");
+
+  if (!["js", "ts", "jsx", "tsx"].includes(extension)) {
+    throw new Error("[renderAction]: An Exception was thrown: Invalid file extension - " + extension);
+  }
 
   const renderOptions: RenderToReadableStreamOptions = {
     bootstrapModules: options?.bootstrap,
-                      
   };
 
   if (options?.hydrate) {
-    console.log('Pausing, debugging hydration...');
-    const hydra = Hydra.create<typeof props>();
-    hydra
+    const h = Hydra.create();
+    h
       .setComponent(Component)
-      .setExtension("tsx")
       .setPathToComponent(pathToComponent)
-      .setProps(props);
+      .setImportNonDefaultComponent(options?.name)
+      .setExtension(extension as any)
+      .setProps(props)
+      .setSelector(options?.selector);
 
-    if (options?.name) {
-      hydra.setImportNonDefaultComponent(options.name);
-    }
-
-    const result = await hydra.createBundle();
-
-    console.log(result);
-    process.exit(0);
+    const bundle = await h.createBundle();
+    renderOptions.bootstrapScriptContent = bundle;
   }
 
   if (options?.await || options?.serialize) {
-    const markup = await pipeComponentToCollectedString(<Component {...props} />);
+    const markup = await pipeComponentToCollectedString(<Component {...props} />, renderOptions);
 
     if (options?.serialize) {
       if (options.serialize === "json") {
@@ -117,10 +120,10 @@ const renderAction: RenderAction = async (pathToComponent, options) => {
   }
 
   if (options?.pipe) {
-    return await pipeComponentToNamedPipe(options, Component, props);
+    return await pipeComponentToNamedPipe(options, Component, props, renderOptions);
   }
 
-  return await pipeComponentToStdout(<Component {...props} />);
+  return await pipeComponentToStdout(<Component {...props} />, renderOptions);
 };
 
 export function setupRenderAction(program: Command) {
@@ -170,56 +173,4 @@ export function setupRenderAction(program: Command) {
     .action(renderAction);
 
   return program;
-}
-
-function getLoaderFnContext() {
-  return {};
-}
-
-function getPropsFromOptions(options: RenderActionOptions) {
-  options.props ||= {};
-  return typeof options?.props === "string" ? JSON.parse(options?.props) : options.props;
-}
-
-async function getLoaderProvisionedProps(options: RenderActionOptions, props = {}) {
-  if (options?.loader) {
-    let loaderFn = null;
-    let pathToLoader = options.loader;
-    if (pathToLoader.endsWith(":props")) {
-      pathToLoader = pathToLoader.slice(0, -":props".length);
-      loaderFn = await $load(pathToLoader, "props");
-    } else {
-      loaderFn = await $load(pathToLoader);
-    }
-    if (loaderFn) {
-      const loadedProps = await Promise.resolve(loaderFn(getLoaderFnContext(), options?.request));
-      if (loadedProps && typeof loadedProps === "object") {
-        props = { ...props, ...loadedProps };
-      }
-    }
-  }
-  return props;
-}
-
-async function pipeComponentToNamedPipe<Props extends React.JSX.IntrinsicAttributes = {}>(
-  options: RenderActionOptions,
-  Component: React.ComponentType,
-  props: Props = {} as Props,
-  renderToReadableStreamOptions: RenderToReadableStreamOptions = {},
-) {
-  const pipePath = $relative(options.pipe!, import.meta.url);
-  const writable = fs.createWriteStream($relative(options.pipe!, import.meta.url));
-  try {
-    await pipeComponentToNodeStream(
-      <Component {...props} />,
-      writable,
-      renderToReadableStreamOptions,
-    );
-    console.error(`Successfully rendered component to pipe: ${pipePath}`);
-  } catch (error) {
-    console.error(`Error piping to named pipe: ${error}`);
-    throw error;
-  } finally {
-    writable.end();
-  }
 }
