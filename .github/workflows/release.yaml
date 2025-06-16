@@ -39,6 +39,12 @@ jobs:
             - name: Build
               run: bun run build 
 
+            - name: Publish to npm
+              run: npm publish
+              env:
+                NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+              continue-on-error: false
+
             - name: Upload to Release
               uses: softprops/action-gh-release@v1
               with:
