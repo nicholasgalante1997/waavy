@@ -1,25 +1,59 @@
 {
   "name": "waavy",
   "description": "A library to support rendering React components like in any server environment, not just javascript runtimes.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
+  "bin": {
+    "waavy": "bin/waavy.js"
+  },
   "files": [
+    "bin/waavy.js",
+    "out/browser.js",
+    "out/browser.js.map",
+    "out/server.js",
+    "out/server.js.map",
+    "out/lib/",
+    "post-install.js",
     "package.json",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
+  "exports": {
+    "./browser": {
+      "default": "./out/browser.js",
+      "import": "./out/browser.js",
+      "types": "./out/lib/exports/browser.d.ts"
+    },
+    "./server": {
+      "default": "./out/server.js",
+      "import": "./out/server.js",
+      "types": "./out/lib/exports/server.d.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "readme": "README.md",
+  "keywords": ["react", "server-rendering", "ssr", "waavy"],
+  "author": "Nick G. <rustycloud42@protonmail.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/nicholasgalante1997/waavy#readme",
+  "bugs": {
+    "url": "https://github.com/nicholasgalante1997/waavy/issues"
+  },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/nicholasgalante1997"
+  },
   "scripts": {
+    "postinstall": "node post-install.js",
+    "clean": "rm -rf out",
     "format": "prettier --write lib",
     "lint": "eslint lib",
     "check-types": "tsc -p tsconfig.json",
-    "bundle:cli:js": "bun run build.ts",
-    "bundle:cli:executable-linux-x64-modern": "bun build --compile --minify --sourcemap --bytecode --target=bun-linux-x64-modern lib/cli.tsx --outfile=out/waavy-linux-x64-modern",
-    "bundle:cli:executable-linux-x64-baseline": "bun build --compile --minify --sourcemap --bytecode --target=bun-linux-x64-baseline lib/cli.tsx --outfile=out/waavy-linux-x64-baseline",
-    "bundle:cli:executable-macos-x64": "bun build --compile --minify --sourcemap --bytecode --target=bun-darwin-x64 lib/cli.tsx --outfile=out/waavy-macos-x64",
-    "bundle:cli:executable-macos-arm64": "bun build --compile --minify --sourcemap --bytecode --target=bun-darwin-arm64 lib/cli.tsx --outfile=out/waavy-macos-arm64",
-    "bundle:cli:executable-linux-arm64": "bun build --compile --minify --sourcemap --bytecode --target=bun-linux-arm64 lib/cli.tsx --outfile=out/waavy-linux-arm64",
-    "bundle:cli:executable-windows-x64-modern": "bun build --compile --minify --sourcemap --bytecode --target=bun-windows-x64-modern lib/cli.tsx --outfile=out/waavy-windows-x64-modern",
-    "bundle:cli:executable-windows-x64-baseline": "bun build --compile --minify --sourcemap --bytecode --target=bun-windows-x64-baseline lib/cli.tsx --outfile=out/waavy-windows-x64-baseline",
-    "build": "run-s check-types bundle:cli:*",
+    "bundle": "DEBUG=waavy:* bun run build.ts --all --verbose",
+    "bundle:verbose": "bun run bundle -- --verbose",
+    "bundle:all": "bun run bundle -- --all",
+    "prebuild": "run-s clean test",
+    "build": "run-s check-types bundle",
     "test": "bun test"
   },
   "publishConfig": {
@@ -27,15 +61,37 @@
     "registry": "https://registry.npmjs.org/",
     "tag": "latest"
   },
-  "packageManager": "bun@1.1.34",
-  "peerDependencies": {
-    "react": "^19.0.0-rc-5b0ef217-20241202",
-    "react-dom": "^19.0.0-rc-5b0ef217-20241202",
-    "@tanstack/react-query": "^5.62.3",
-    "typescript": "^5.7.2"
+  "packageManager": "bun@1.2.15",
+  "engines": {
+    "bun": ">=1.2.0"
   },
-  "optionalDependencies": {
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nicholasgalante1997/waavy"
+  },
+  "dependencies": {
+    "commander": "^14.0.0",
+    "debug": "4.4.1"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "@tanstack/react-query": "^5.62.3",
     "@tanstack/react-query-devtools": "^5.62.3"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": false
+    },
+    "react-dom": {
+      "optional": false
+    },
+    "@tanstack/react-query": {
+      "optional": true
+    },
+    "@tanstack/react-query-devtools": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.10",
@@ -46,18 +102,14 @@
     "@types/debug": "^4.1.12",
     "@types/react": "19",
     "@types/react-dom": "19",
-    "debug": "^4.4.0",
     "eslint": "^9.16.0",
     "globals": "^15.12.0",
     "node-emoji": "^2.1.3",
     "npm-run-all": "^4.1.5",
     "prettier": "^3.3.3",
-    "react": "^19.0.0-rc-5b0ef217-20241202",
-    "react-dom": "^19.0.0-rc-5b0ef217-20241202",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.16.0"
-  },
-  "dependencies": {
-    "commander": "^12.1.0"
   }
 }
