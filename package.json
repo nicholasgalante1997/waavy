@@ -8,11 +8,29 @@
   },
   "files": [
     "bin/waavy.js",
+    "out/browser.js",
+    "out/browser.js.map",
+    "out/server.js",
+    "out/server.js.map",
+    "out/lib/",
     "post-install.js",
     "package.json",
     "README.md",
     "LICENSE"
   ],
+  "exports": {
+    "./browser": {
+      "default": "./out/browser.js",
+      "import": "./out/browser.js",
+      "types": "./out/lib/exports/browser.d.ts"
+    },
+    "./server": {
+      "default": "./out/server.js",
+      "import": "./out/server.js",
+      "types": "./out/lib/exports/server.d.ts"
+    },
+    "./package.json": "./package.json"
+  },
   "readme": "README.md",
   "keywords": ["react", "server-rendering", "ssr", "waavy"],
   "author": "Nick G. <rustycloud42@protonmail.com>",

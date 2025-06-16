@@ -5,7 +5,7 @@ export function setupProgramMetadata(program: Command, version: string) {
     .name("waavy")
     .version(version)
     .description(
-      "A library to support rendering React components in non-javascript server environments"
+      "A library to support rendering React components in non-javascript server environments",
     );
 
   return program;
@@ -13,7 +13,7 @@ export function setupProgramMetadata(program: Command, version: string) {
 
 export function setupProgramActions(
   program: Command,
-  setupActionFns: Array<(program: Command) => void>
+  setupActionFns: Array<(program: Command) => void>,
 ) {
   for (const setupActionFn of setupActionFns) {
     setupActionFn(program);

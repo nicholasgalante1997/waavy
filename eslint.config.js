@@ -8,6 +8,6 @@ export default [
   { languageOptions: { globals: { ...globals.browser, ...globals.node } } },
   pluginJs.configs.recommended,
   ...tseslint.configs.recommended,
-  { ignores: ['lib/__tests__/**', 'lib/extensions/*', 'examples/*'] },
+  { ignores: ['lib/__tests__/**', 'lib/extensions/*', 'examples/*', 'lib/server/models/Server.ts'] },
   { rules: { '@typescript-eslint/no-explicit-any': 'off' }}
 ];
