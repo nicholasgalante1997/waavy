@@ -92,9 +92,9 @@ export async function dehydrateServerSideQueries(
   };
 }
 
-export async function extendRenderWithTanstackQueryServerSideDataFetching<Props = {}>(
-  trqOptions: RenderOptions & { props: Props },
-) {
+export async function extendRenderWithTanstackQueryServerSideDataFetching<
+  Props = {},
+>(trqOptions: RenderOptions & { props: Props }) {
   const dehydratedState = await dehydrateServerSideQueries({
     prefetch: trqOptions.tanstackReactQuery?.prefetch!,
   });

@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import Package from '../package.json';
+import Package from "../package.json";
 import { setupProgramActions, setupProgramMetadata } from "./cli/index";
 import { setupRenderAction } from "./cli/render";
 

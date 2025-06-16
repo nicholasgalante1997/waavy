@@ -18,7 +18,7 @@ export default class Hydra<Props> {
   constructor(
     Component?: React.ComponentType<Props>,
     props?: Props,
-    pathToComponent?: string
+    pathToComponent?: string,
   ) {
     this.Component = Component;
     this.props = props;
@@ -65,7 +65,7 @@ export default class Hydra<Props> {
     try {
       if (!this.verify()) {
         throw new Error(
-          "Hydra must have a Component, a pathToComponent, and an extension"
+          "Hydra must have a Component, a pathToComponent, and an extension",
         );
       }
 
@@ -76,7 +76,7 @@ export default class Hydra<Props> {
         {
           name: this.nonDefaultComponentName,
           selector: this.selector,
-        }
+        },
       );
 
       const result = await bundleInlineCode(
@@ -84,7 +84,7 @@ export default class Hydra<Props> {
         {
           loader: this.extension || "tsx",
         },
-        this.buildOptions
+        this.buildOptions,
       );
 
       if (!result) {
@@ -99,8 +99,8 @@ export default class Hydra<Props> {
             .filter((log) => log.level === "error" || log.level === "warning")
             .map((log) => log.message)
             .join(
-              "\n"
-            )}\n\nGenerated: ${outputs.map((output) => output.path).join(", ")}`
+              "\n",
+            )}\n\nGenerated: ${outputs.map((output) => output.path).join(", ")}`,
         );
       }
 
@@ -109,7 +109,7 @@ export default class Hydra<Props> {
           `JavaScript build failed: No outputs generated.
           \nGenerated: ${result.outputs.map((output) => output.path).join(", ")}
           \nLogs: ${result.logs.map((log) => log.message).join("\n")}
-          `
+          `,
         );
       }
 
@@ -134,7 +134,7 @@ function getHydraTemplate<Props>(
   pathToComponent: string,
   baseDir: string,
   props: Props,
-  options: HydraTemplateOptions
+  options: HydraTemplateOptions,
 ) {
   const componentPath = path.relative(baseDir, pathToComponent);
   const normalizedPath = componentPath.startsWith(".")
@@ -167,7 +167,7 @@ function getNodeModulesWaavyCache() {
 
 async function getTempFileInNodeModulesCache(
   extension: string,
-  integrityHash: string
+  integrityHash: string,
 ) {
   const cacheDir = getNodeModulesWaavyCache();
   if (!(await fs.exists(cacheDir))) {
@@ -175,7 +175,7 @@ async function getTempFileInNodeModulesCache(
   }
   const tempFile = path.join(
     cacheDir,
-    `hydration-${integrityHash}.${extension}`
+    `hydration-${integrityHash}.${extension}`,
   );
   return tempFile;
 }
@@ -184,9 +184,8 @@ export async function bundleInlineCode(
   code: string,
   options: BundleInlineOptions = { loader: "tsx" },
   buildOptionOverrides: Partial<Bun.BuildConfig> = {},
-  cache = true
+  cache = true,
 ): Promise<Bun.BuildOutput> {
-
   /**
    * Implement hash based cache busting
    */
@@ -197,7 +196,7 @@ export async function bundleInlineCode(
 
   const tempFile = await getTempFileInNodeModulesCache(
     options.loader,
-    Date.now().toString()
+    Date.now().toString(),
   );
 
   try {
@@ -224,7 +223,7 @@ export async function bundleInlineCode(
   } catch (e) {
     console.error(
       "[bundleInlineCode]: An Exception was thrown during an attempt to build. %s",
-      e
+      e,
     );
     throw e;
   } finally {
@@ -232,7 +231,7 @@ export async function bundleInlineCode(
       await fs.unlink(tempFile).catch((err) => {
         console.error(
           "[bundleInlineCode::unlink]: Error deleting temp file:",
-          err
+          err,
         );
       });
     }
