@@ -5,6 +5,12 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
+// Skip postinstall in CI environments
+if (process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true") {
+  console.log("Skipping postinstall in CI environment");
+  process.exit(0);
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 

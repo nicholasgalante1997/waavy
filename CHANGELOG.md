@@ -21,6 +21,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+## [0.1.4] 06/15/2025
+
+### Added
+
+- Adds `debug` job to Github Actions workflows.
+
+### Fixed
+
+- Sets up conditional to exit early from post-install.js in CI environments
+
+### Removed
+
+### Deprecated
+
+### Security
+
 ## [0.1.3] 06/15/2025
 
 ### Added
