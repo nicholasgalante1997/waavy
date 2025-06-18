@@ -19,6 +19,7 @@ export type RenderAction = (
   pathToComponent: string,
   options: RenderActionOptions,
 ) => void | Promise<void>;
+
 export type RenderActionOptions = {
   /**
    * The name of the component, if left blank, it assumes a default export
@@ -112,7 +113,10 @@ const renderAction: RenderAction = async (pathToComponent, options) => {
       .setSelector(options?.selector);
 
     const bundle = await h.createBundle();
+    const bootstrapWaavyContent = h.createBootstrapPropsInlineScript();
+
     renderOptions.bootstrapScriptContent = bundle;
+    renderOptions.bootstrapScriptContent = bootstrapWaavyContent;
   }
 
   if (options?.await || options?.serialize) {

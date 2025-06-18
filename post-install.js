@@ -5,8 +5,23 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
+try {
+  await import('dotenv/config.js')
+} catch (error) {/** Fail silently */}
+
+// Skip install in local development environments
+if (
+  process.env.WAAVY_SKIP_POSTINSTALL === "true"
+) {
+  console.log("Skipping postinstall in local development environment");
+  process.exit(0);
+}
+
 // Skip postinstall in CI environments
-if (process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true") {
+if (
+    process.env.CI === "true" || 
+    process.env.GITHUB_ACTIONS === "true"
+  ) {
   console.log("Skipping postinstall in CI environment");
   process.exit(0);
 }

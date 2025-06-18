@@ -72,7 +72,8 @@
   },
   "dependencies": {
     "commander": "^14.0.0",
-    "debug": "4.4.1"
+    "debug": "^4.4.1",
+    "dotenv": "^16.5.0"
   },
   "peerDependencies": {
     "react": "^19.0.0",
@@ -105,7 +106,6 @@
     "@types/react-dom": "19",
     "eslint": "^9.16.0",
     "globals": "^15.12.0",
-    "node-emoji": "^2.1.3",
     "npm-run-all": "^4.1.5",
     "prettier": "^3.3.3",
     "react": "^19.0.0",

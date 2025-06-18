@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "bun:test";
+import { describe, it, expect, beforeEach, afterEach, test } from "bun:test";
 import { writeFile, mkdtemp, rmdir } from "fs/promises";
 import { tmpdir } from "os";
 import path, { join } from "path";
@@ -85,5 +85,6 @@ describe("load function", () => {
 describe("Module integration", () => {
   it("should export all expected functions", () => {
     expect(typeof load).toBe("function");
+
   });
 });
