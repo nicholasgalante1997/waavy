@@ -85,6 +85,5 @@ describe("load function", () => {
 describe("Module integration", () => {
   it("should export all expected functions", () => {
     expect(typeof load).toBe("function");
-
   });
 });

@@ -4,7 +4,6 @@ import fs from "fs";
 import path from "path";
 
 import { pipeComponentToNodeStream } from "@/server";
-import { load } from "@/utils";
 import type { RenderActionOptions } from "../render";
 
 export function getPropsFromOptions(options: RenderActionOptions) {
@@ -12,35 +11,6 @@ export function getPropsFromOptions(options: RenderActionOptions) {
   return typeof options?.props === "string"
     ? JSON.parse(options?.props)
     : options.props;
-}
-
-export function getLoaderFnContext() {
-  return {};
-}
-
-export async function getLoaderProvisionedProps(
-  options: RenderActionOptions,
-  props = {},
-) {
-  if (options?.loader) {
-    let loaderFn = null;
-    let pathToLoader = options.loader;
-    if (pathToLoader.endsWith(":props")) {
-      pathToLoader = pathToLoader.slice(0, -":props".length);
-      loaderFn = await load(pathToLoader, "props");
-    } else {
-      loaderFn = await load(pathToLoader);
-    }
-    if (loaderFn) {
-      const loadedProps = await Promise.resolve(
-        loaderFn(getLoaderFnContext(), options?.request),
-      );
-      if (loadedProps && typeof loadedProps === "object") {
-        props = { ...props, ...loadedProps };
-      }
-    }
-  }
-  return props;
 }
 
 export async function pipeComponentToNamedPipe<

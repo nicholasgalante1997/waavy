@@ -136,13 +136,13 @@ export default class Hydra<Props> {
   createBootstrapPropsInlineScript() {
     const waavyBrowserDTO = {
       $react: {
-        root: { props: this.props || {} }
-      }
+        root: { props: this.props || {} },
+      },
     };
     return `
 console.log('Page loaded, React will attempt hydration now...');
 window.__WAAVY__ = ${JSON.stringify(waavyBrowserDTO)};
-`
+`;
   }
 
   private verify(): boolean {
@@ -207,9 +207,8 @@ export async function bundleInlineCode(
   options: BundleInlineOptions = { loader: "tsx" },
   buildOptionOverrides: Partial<Bun.BuildConfig> = {},
   cache = true,
-  useCache = false
+  useCache = false,
 ): Promise<Bun.BuildOutput> {
-
   const tempFile = await getTempFileInNodeModulesCache(
     options.loader,
     Date.now().toString(),

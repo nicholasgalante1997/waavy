@@ -10,7 +10,6 @@ import {
 import Hydra from "@/server/models/Hydra";
 import { load } from "@/utils";
 import {
-  getLoaderProvisionedProps,
   getPropsFromOptions,
   pipeComponentToNamedPipe,
 } from "./utils";
@@ -20,7 +19,7 @@ export type RenderAction = (
   options: RenderActionOptions,
 ) => void | Promise<void>;
 
-export type RenderActionOptions = {
+export type RenderActionOptions<Props = Record<string, unknown>> = {
   /**
    * The name of the component, if left blank, it assumes a default export
    * @default "default"
@@ -28,15 +27,10 @@ export type RenderActionOptions = {
   name?: "default" | string;
 
   /**
-   * The props to pass to the component. If used in conjunction with a loader, it provides the initial props object and the result of the loader fn is merged in after.
+   * The props to pass to the component.
    * @default {}
    */
-  props?: string | object;
-
-  /**
-   * The path to the file containing the loader function, See our section on using loaders.
-   */
-  loader?: string;
+  props?: string | Props;
 
   /**
    * The request object to pass to the loader function.
@@ -79,17 +73,20 @@ export type RenderActionOptions = {
 
   /**
    * The selector to use when hydrating the component.
-   * @default "#app"
+   * @default "document"
    */
   selector?: string;
+
+  /**
+   * Support rendering an error or fallback component if a Component throws an error during rendering
+   */
+  errorComponentPath?: string;
+  errorComponentName?: string;
 };
 
 const renderAction: RenderAction = async (pathToComponent, options) => {
-  const Component = await load(pathToComponent, options.name);
-  const props = await getLoaderProvisionedProps(
-    options,
-    getPropsFromOptions(options),
-  );
+  const Component = await load(pathToComponent, options?.name);
+  const props = getPropsFromOptions(options);
   const extension = path.extname(pathToComponent).replace(".", "");
 
   if (!["js", "ts", "jsx", "tsx"].includes(extension)) {
@@ -113,10 +110,22 @@ const renderAction: RenderAction = async (pathToComponent, options) => {
       .setSelector(options?.selector);
 
     const bundle = await h.createBundle();
+
+    if (!bundle) {
+      throw new Error(
+        "[waavy::renderAction] hydration bundle creation failed.",
+      );
+    }
+
     const bootstrapWaavyContent = h.createBootstrapPropsInlineScript();
 
-    renderOptions.bootstrapScriptContent = bundle;
+    // Window assignment script runs first (inline script)
     renderOptions.bootstrapScriptContent = bootstrapWaavyContent;
+
+    // Hydration bundle runs after as a module script
+    const bundleDataUrl = `data:text/javascript;charset=utf-8,${bundle}`;
+    renderOptions.bootstrapModules ||= [];
+    renderOptions.bootstrapModules.push(bundleDataUrl);
   }
 
   if (options?.await || options?.serialize) {
