@@ -1,3 +1,5 @@
+export * from "./cli";
+
 export type RenderOptions = {
   /**
    * If your application uses react-query, you can opt into server side rendering (prefetching) all your react-query queries here

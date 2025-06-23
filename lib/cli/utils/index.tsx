@@ -4,7 +4,7 @@ import fs from "fs";
 import path from "path";
 
 import { pipeComponentToNodeStream } from "@/server";
-import type { RenderActionOptions } from "../render";
+import type { RenderActionOptions } from "@/types";
 
 export function getPropsFromOptions(options: RenderActionOptions) {
   options.props ||= {};
@@ -38,4 +38,8 @@ export async function pipeComponentToNamedPipe<
   } finally {
     writable.end();
   }
+}
+
+export function getWaavyRenderContext(request?: Partial<Request>) {
+  return {};
 }

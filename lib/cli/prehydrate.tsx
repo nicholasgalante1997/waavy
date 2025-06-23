@@ -11,7 +11,7 @@ import { load } from "@/utils";
 type WaavyFileConfig = Partial<Omit<PrehydrateActionOptions, "config">>;
 
 export type PrehydrateAction = (
-  options: PrehydrateActionOptions
+  options: PrehydrateActionOptions,
 ) => void | Promise<void>;
 export type PrehydrateActionOptions<Props = Record<string, unknown>> = {
   /**
@@ -42,9 +42,9 @@ export type PrehydrateActionOptions<Props = Record<string, unknown>> = {
 
   /**
    * Props to be passed to the component.
-   * 
+   *
    * This option only works in conjunction with the `file` option
-   * 
+   *
    * This option is ignored entirely when the `dir` option is used, instead of the `file` option
    */
   props?: Props;
@@ -54,7 +54,7 @@ export type PrehydrateActionOptions<Props = Record<string, unknown>> = {
    *
    * When you pass a directory to waavy,
    * it assumes that each file contains a default export that is a valid React Component.
-   * 
+   *
    * Currently
    */
   dir?: string;
@@ -106,7 +106,7 @@ const prehydrateAction: PrehydrateAction = async (options) => {
 
   if (!config && !dir && !file)
     throw new Error(
-      `[waavy::prehydrate] Prehydration Failed. Must supply one of [a valid waavy config (waavy.json), dir option, file option]`
+      `[waavy::prehydrate] Prehydration Failed. Must supply one of [a valid waavy config (waavy.json), dir option, file option]`,
     );
 
   try {
@@ -119,7 +119,7 @@ const prehydrateAction: PrehydrateAction = async (options) => {
     }
   } catch (e) {
     /**
-     * TODO 
+     * TODO
      */
   }
 };
@@ -127,19 +127,30 @@ const prehydrateAction: PrehydrateAction = async (options) => {
 export function setupPrehydrateAction(program: Command) {
   program
     .command("prehydrate")
-    .description(`Bundles React Components into client side hydration scripts.
+    .description(
+      `Bundles React Components into client side hydration scripts.
         This is particularly useful for speeding up handler times, as this will create a cache of hydration scripts that can either be served via your server as static files, or used for faster embedding of hydration javascript into the html your server responds with.
-    `);
-
-  program
-    .command("prehydrate")
-    .option("-c, --config [path-to-config-file]", "The path to the waavy configuration json file", undefined)
-    .option("-f, --file [file]", "The path to the file to prehydrate/bundle", undefined)
+    `,
+    )
+    .option(
+      "-c, --config [path-to-config-file]",
+      "The path to the waavy configuration json file",
+      undefined,
+    )
+    .option(
+      "-f, --file [file]",
+      "The path to the file to prehydrate/bundle",
+      undefined,
+    )
     .option("-p, --props [props]", "Props to pass to the component", undefined)
-    .option("-d, --dir [dir]", "The path to the directory of files you want to prehydrate/bundle", undefined)
+    .option(
+      "-d, --dir [dir]",
+      "The path to the directory of files you want to prehydrate/bundle",
+      undefined,
+    )
     .option("-o, --out [outdir]", "The directory to write to", undefined)
     .option("--use-defaults", "Use the waavy sane defaults", false)
-    .action(prehydrateAction)
+    .action(prehydrateAction);
 
   return program;
 }
@@ -147,13 +158,13 @@ export function setupPrehydrateAction(program: Command) {
 async function handlePrehydrateDirectory(
   dir: string,
   config?: WaavyFileConfig,
-  out?: string
+  out?: string,
 ) {
   const ndir = path.isAbsolute(dir) ? dir : path.resolve(process.cwd(), dir);
 
   if (!(await fs.exists(ndir))) {
     throw new Error(
-      `[waavy::prehydrate] Supplied Directory ${dir} does not exist.`
+      `[waavy::prehydrate] Supplied Directory ${dir} does not exist.`,
     );
   }
 
@@ -172,7 +183,7 @@ async function handlePrehydrateDirectory(
 async function handlePrehydrateFile(
   file: string | Dirent<string>,
   config?: WaavyFileConfig,
-  out?: string
+  out?: string,
 ) {
   /**
    *
@@ -184,22 +195,24 @@ async function handlePrehydrateFile(
   }
 }
 
-async function handlePrehydrateDirent(file: Dirent<string>, config?: WaavyFileConfig, out?: string) {}
+async function handlePrehydrateDirent(
+  file: Dirent<string>,
+  config?: WaavyFileConfig,
+  out?: string,
+) {}
 
 async function handlePrehydrateStringPath(
   file: string,
   config?: WaavyFileConfig,
-  out?: string
+  out?: string,
 ) {
   const npath = isAbsolute(file) ? file : path.resolve(process.cwd(), file);
   if (!(await fs.exists(npath)))
     throw new Error(
-      `[waavy::prehydrate] Supplied file ${npath} does not exist.`
+      `[waavy::prehydrate] Supplied file ${npath} does not exist.`,
     );
   const { component, defaultProps, extension, propsLoader } =
     await parseStringDelimiterPattern(file);
-
-  
 }
 
 async function parseStringDelimiterPattern(file: string) {
@@ -221,7 +234,7 @@ async function parseStringDelimiterPattern(file: string) {
       file,
       component,
       propsLoader,
-      imported: name
+      imported: name,
     };
   } else {
     const component = await load(file, "default");
@@ -231,7 +244,7 @@ async function parseStringDelimiterPattern(file: string) {
       file,
       component,
       propsLoader,
-      imported: "default"
+      imported: "default",
     };
   }
 }
@@ -249,22 +262,19 @@ function getHydraBundleResult<Props = any>(
   extension: string,
   props?: Props,
   name?: string,
-  selector?: string
+  selector?: string,
 ) {
   const h = Hydra.create<Props>();
 
-  h
-    .setComponent(Component)
+  h.setComponent(Component)
     .setExtension(extension as any)
     .setProps(props as Props)
     .setImportNonDefaultComponent(name)
     .setPathToComponent(file)
-    .setSelector(selector)
+    .setSelector(selector);
 
-  return Promise.all(
-    [
-      h.createBundle(), 
-      Promise.resolve(h.createBootstrapPropsInlineScript())
-    ]
-  );
+  return Promise.all([
+    h.createBundle(),
+    Promise.resolve(h.createBootstrapPropsInlineScript()),
+  ]);
 }

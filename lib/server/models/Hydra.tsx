@@ -2,6 +2,12 @@ import React from "react";
 import fs from "fs/promises";
 import path from "path";
 
+import {
+  DEFAULT_WAAVY_HYDRATION_SELECTOR,
+  DEFAULT_WAAVY_PROPS_CACHE_KEY,
+} from "@/constants";
+import { getVersion } from "@/utils";
+
 interface BundleInlineOptions {
   loader: "js" | "jsx" | "ts" | "tsx";
   target?: "browser" | "node" | "bun";
@@ -11,6 +17,12 @@ interface BundleInlineOptions {
 
 type HydraTemplateOptions = {
   name?: string;
+  selector?: string;
+};
+
+type HydraWindowAssignmentScriptOptions<Props> = {
+  props: Props;
+  propsCacheKey?: string;
   selector?: string;
 };
 
@@ -25,6 +37,20 @@ export default class Hydra<Props> {
 
   static create<Props>() {
     return new Hydra<Props>();
+  }
+
+  static createWindowAssignmentInlineScript<Props>(
+    options: HydraWindowAssignmentScriptOptions<Props>,
+  ) {
+    return `
+      window.waavy = {};
+      window.waavy.version = ${getVersion()};
+      window.waavy.keys = {};
+      window.waavy.keys.pcache = "${options.propsCacheKey || DEFAULT_WAAVY_PROPS_CACHE_KEY}";
+      window.waavy.keys.domselector = "${options.selector || DEFAULT_WAAVY_HYDRATION_SELECTOR}";
+      window[window.waavy.keys.pcache] = ${JSON.stringify(options.props)};
+      window.waavy.__$stash__.props = ${JSON.stringify(options.props)};
+    `;
   }
 
   constructor(

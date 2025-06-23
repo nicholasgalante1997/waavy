@@ -1,5 +1,6 @@
 import React from "react";
 import type { RenderToReadableStreamOptions } from "react-dom/server";
+
 import type { Command } from "commander";
 import path from "path";
 
@@ -7,86 +8,61 @@ import {
   pipeComponentToStdout,
   pipeComponentToCollectedString,
 } from "@/server";
-import Hydra from "@/server/models/Hydra";
 import { load } from "@/utils";
 import {
   getPropsFromOptions,
+  getWaavyRenderContext,
   pipeComponentToNamedPipe,
 } from "./utils";
 
-export type RenderAction = (
-  pathToComponent: string,
-  options: RenderActionOptions,
-) => void | Promise<void>;
-
-export type RenderActionOptions<Props = Record<string, unknown>> = {
-  /**
-   * The name of the component, if left blank, it assumes a default export
-   * @default "default"
-   */
-  name?: "default" | string;
-
-  /**
-   * The props to pass to the component.
-   * @default {}
-   */
-  props?: string | Props;
-
-  /**
-   * The request object to pass to the loader function.
-   */
-  request?: Partial<Request>;
-
-  /**
-   * Instead of piping the rendered component to stdout, it will pipe the component to a supplied named pipe. Pretty experimental currently.
-   */
-  pipe?: string;
-
-  /**
-   * If true, the result of the render operation will be collected as streamed,
-   * and then passed in a final state to stdout, equivocal to an all or none op.
-   */
-  await?: boolean;
-
-  /**
-   * Whether to include a client side javascript bundle.
-   * This calls import('react-dom/client').hydrateRoot on your component,
-   * in a module javascript bundle that is embedded into our server generated markup.
-   *
-   * This is currently a work in progress, meaning there's been little progress and it does not work.
-   *
-   * 6/15/2025: Update, it might work
-   */
-  hydrate?: boolean;
-
-  /**
-   * Any files you want to bootstrap on the client.
-   * This is typically used for client side hydration of the React app.
-   */
-  bootstrap?: string[];
-
-  /**
-   * Write to stdout in a serialized structured format
-   * Currently supports JSON
-   */
-  serialize?: "json";
-
-  /**
-   * The selector to use when hydrating the component.
-   * @default "document"
-   */
-  selector?: string;
-
-  /**
-   * Support rendering an error or fallback component if a Component throws an error during rendering
-   */
-  errorComponentPath?: string;
-  errorComponentName?: string;
-};
+import type { RenderAction, LoaderFn } from "@/types";
+import Hydra from "@/server/models/Hydra";
 
 const renderAction: RenderAction = async (pathToComponent, options) => {
-  const Component = await load(pathToComponent, options?.name);
-  const props = getPropsFromOptions(options);
+  const {
+    await: _await = false,
+    bootstrap,
+    cache = false,
+    errorComponentName,
+    errorComponentPath,
+    pcacheKey,
+    selector,
+    name,
+    pipe,
+    request = {},
+    serialize = false,
+  } = options;
+
+  const Component = await load(pathToComponent, name);
+  const waavyFileModules = await load(pathToComponent, "waavy");
+  let props = getPropsFromOptions(options);
+
+  if (
+    waavyFileModules &&
+    "dataLoader" in waavyFileModules &&
+    typeof waavyFileModules?.dataLoader === "function"
+  ) {
+    try {
+      const loader = waavyFileModules?.dataLoader as LoaderFn<typeof props>;
+      const loaderResult = await Promise.resolve(
+        loader(request, getWaavyRenderContext()),
+      );
+      if (
+        loaderResult &&
+        loaderResult?.data &&
+        typeof loaderResult?.data === "object"
+      ) {
+        props = { ...props, ...loaderResult?.data };
+      }
+    } catch (e) {
+      console.warn(
+        "[waavy::render] A data loader fn has thrown the following error,",
+        e,
+      );
+      props = props;
+    }
+  }
+
   const extension = path.extname(pathToComponent).replace(".", "");
 
   if (!["js", "ts", "jsx", "tsx"].includes(extension)) {
@@ -96,46 +72,25 @@ const renderAction: RenderAction = async (pathToComponent, options) => {
     );
   }
 
+  const waavyScriptContent = Hydra.createWindowAssignmentInlineScript({
+    props,
+    propsCacheKey: pcacheKey,
+    selector,
+  });
+
   const renderOptions: RenderToReadableStreamOptions = {
-    bootstrapModules: options?.bootstrap,
+    bootstrapModules: bootstrap,
+    bootstrapScriptContent: waavyScriptContent,
   };
 
-  if (options?.hydrate) {
-    const h = Hydra.create();
-    h.setComponent(Component)
-      .setPathToComponent(pathToComponent)
-      .setImportNonDefaultComponent(options?.name)
-      .setExtension(extension as any)
-      .setProps(props)
-      .setSelector(options?.selector);
-
-    const bundle = await h.createBundle();
-
-    if (!bundle) {
-      throw new Error(
-        "[waavy::renderAction] hydration bundle creation failed.",
-      );
-    }
-
-    const bootstrapWaavyContent = h.createBootstrapPropsInlineScript();
-
-    // Window assignment script runs first (inline script)
-    renderOptions.bootstrapScriptContent = bootstrapWaavyContent;
-
-    // Hydration bundle runs after as a module script
-    const bundleDataUrl = `data:text/javascript;charset=utf-8,${bundle}`;
-    renderOptions.bootstrapModules ||= [];
-    renderOptions.bootstrapModules.push(bundleDataUrl);
-  }
-
-  if (options?.await || options?.serialize) {
+  if (_await || serialize) {
     const markup = await pipeComponentToCollectedString(
       <Component {...props} />,
       renderOptions,
     );
 
-    if (options?.serialize) {
-      if (options.serialize === "json") {
+    if (serialize) {
+      if (serialize === "json") {
         process.stdout.write(
           JSON.stringify({ html: markup, exitCode: 0, props }),
         );
@@ -143,13 +98,13 @@ const renderAction: RenderAction = async (pathToComponent, options) => {
       }
     }
 
-    if (options?.await) {
+    if (_await) {
       process.stdout.write(markup);
       return;
     }
   }
 
-  if (options?.pipe) {
+  if (pipe) {
     return await pipeComponentToNamedPipe(
       options,
       Component,
@@ -164,7 +119,9 @@ const renderAction: RenderAction = async (pathToComponent, options) => {
 export function setupRenderAction(program: Command) {
   program
     .command("render")
-    .description("Render a React component into a stdout stream")
+    .description(
+      "Render a React component into a stdout stream or to a provided pipe",
+    )
     .argument(
       "<path-to-component>",
       "The path to the file containing the component to render",
@@ -175,23 +132,19 @@ export function setupRenderAction(program: Command) {
       "{}",
     )
     .option(
-      "-l, --loader <path-to-loader>",
-      "The path to the file containing the loader function, See our section on using loaders.",
-    )
-    .option(
       "-n, --name <name>",
       "The name of the component, if left blank, it assumes a default export",
       "default",
     )
     .option(
-      "-h, --hydrate",
-      "Whether to include a client side javascript bundle. This calls import('react-dom/client').hydrateRoot on your component in a module javascript bundle that is embedded into our server generated markup.",
-      false,
-    )
-    .option(
       "-b, --bootstrap [files-to-bootstrap...]",
       "Any files you want to bootstrap on the client. This is typically used for client side hydration of the React app.",
       [],
+    )
+    .option(
+      "--cache",
+      "If this flag is set to true, Waavy renderer will spawn a secondary non-blocking Worker thread to write the result of the render operation to a local file cache. This is recommended for production when it's very likely your components aren't changing if props are the same, and we can use a cached result of the render operation in such a case.",
+      false,
     )
     .option(
       "--pipe <path-to-pipe>",
@@ -211,6 +164,28 @@ export function setupRenderAction(program: Command) {
       "--serialize <format>",
       "Write to stdout in a serialized structured format Currently supports JSON",
       false,
+    )
+    .option(
+      "--error-page-path <path-to-error-file>",
+      "A fallback page to render in the event that an error is thrown during server side rendering.",
+    )
+    .option(
+      "--error-page-component-name <name>",
+      "The name of the Error page component to import. Used in conjunction with --error-page-path",
+      "default",
+    )
+    .option(
+      "--selector",
+      `The selector that you will mount your React component node to within the browser.
+        If your application uses client side hydration, this is the selector for the element that you pass to ReactDOM.hydrateRoot
+        If you are using the "waavy" client side function, this property is used for client side hydration.      
+        If this property is left blank, it is assumed you are following the <Html /> React Page pattern,
+        and we will attempt to use "document" as the selector in this case.`,
+    )
+    .option(
+      "--pcache-key",
+      `A string indicating what field you want Waavy to assign props to on the window object.
+      if left default, Waavy will put the props in window._p`,
     )
     .action(renderAction);
 
