@@ -86,6 +86,32 @@ export type RenderActionOptions<Props = Record<string, unknown>> = {
    * A string indicating what field you want Waavy to assign props to on the window object
    *
    * if left default, Waavy will put the props in window._p;
+   *
+   * @default "_p"
    */
   pcacheKey?: string;
+
+  /**
+   * Enables verbose log output
+   * @default false
+   */
+  verbose?: boolean;
+
+  /**
+   * Number of seconds to wait before aborting server-rendering,
+   * flushing the remaining markup to the client,
+   * and defaulting to client side rendering
+   *
+   * @see https://react.dev/reference/react-dom/server/renderToReadableStream#aborting-server-rendering
+   */
+  maxTimeout?: number | string;
+
+  /**
+   * Progressive chunk size (In bytes)
+   *
+   * This value is passed directly to ReactDOMServer#renderToReadableStream progressiveChunkSize option
+   *
+   * @see https://github.com/facebook/react/blob/14c2be8dac2d5482fda8a0906a31d239df8551fc/packages/react-server/src/ReactFizzServer.js#L210-L225
+   */
+  chunk?: number | string;
 };

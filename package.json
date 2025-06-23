@@ -75,7 +75,8 @@
   "dependencies": {
     "commander": "^14.0.0",
     "debug": "^4.4.1",
-    "dotenv": "^16.5.0"
+    "dotenv": "^16.5.0",
+    "printf": "^0.6.1"
   },
   "peerDependencies": {
     "react": "^19.0.0",
@@ -96,6 +97,9 @@
     "@tanstack/react-query-devtools": {
       "optional": true
     }
+  },
+  "optionalDependencies": {
+    "supports-color": "^10.0.0"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.10",

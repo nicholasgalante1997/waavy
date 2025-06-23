@@ -8,112 +8,171 @@ import {
   pipeComponentToStdout,
   pipeComponentToCollectedString,
 } from "@/server";
-import { load } from "@/utils";
+import Hydra from "@/server/models/Hydra";
+import defaultErrorPage from "@/templates/waavy-error-page";
+import type { RenderAction } from "@/types";
+import { asOptionalNumber, load, logger } from "@/utils";
 import {
+  fetchLoaderProvProps,
   getPropsFromOptions,
-  getWaavyRenderContext,
   pipeComponentToNamedPipe,
+  getWaavyRenderContext,
+  getErrorPageMarkup,
 } from "./utils";
 
-import type { RenderAction, LoaderFn } from "@/types";
-import Hydra from "@/server/models/Hydra";
+import ComponentNotFoundError from "@/errors/ComponentNotFound";
+import InvalidExtensionError from "@/errors/InvalidExtension";
+import { handleError } from "@/errors";
+import PropDataLoaderException from "@/errors/PropDataLoader";
 
 const renderAction: RenderAction = async (pathToComponent, options) => {
   const {
     await: _await = false,
     bootstrap,
     cache = false,
+    chunk,
     errorComponentName,
     errorComponentPath,
+    maxTimeout,
     pcacheKey,
     selector,
     name,
     pipe,
     request = {},
     serialize = false,
+    verbose = false,
   } = options;
 
-  const Component = await load(pathToComponent, name);
-  const waavyFileModules = await load(pathToComponent, "waavy");
-  let props = getPropsFromOptions(options);
+  let signal,
+    timeout,
+    timeoutFired = false;
 
-  if (
-    waavyFileModules &&
-    "dataLoader" in waavyFileModules &&
-    typeof waavyFileModules?.dataLoader === "function"
-  ) {
-    try {
-      const loader = waavyFileModules?.dataLoader as LoaderFn<typeof props>;
-      const loaderResult = await Promise.resolve(
-        loader(request, getWaavyRenderContext()),
-      );
-      if (
-        loaderResult &&
-        loaderResult?.data &&
-        typeof loaderResult?.data === "object"
-      ) {
-        props = { ...props, ...loaderResult?.data };
-      }
-    } catch (e) {
-      console.warn(
-        "[waavy::render] A data loader fn has thrown the following error,",
-        e,
-      );
-      props = props;
+  try {
+    const Component = await load(pathToComponent, name);
+    if (Component == null) {
+      throw new ComponentNotFoundError(pathToComponent, name || "default");
     }
-  }
 
-  const extension = path.extname(pathToComponent).replace(".", "");
-
-  if (!["js", "ts", "jsx", "tsx"].includes(extension)) {
-    throw new Error(
-      "[renderAction]: An Exception was thrown: Invalid file extension - " +
-        extension,
-    );
-  }
-
-  const waavyScriptContent = Hydra.createWindowAssignmentInlineScript({
-    props,
-    propsCacheKey: pcacheKey,
-    selector,
-  });
-
-  const renderOptions: RenderToReadableStreamOptions = {
-    bootstrapModules: bootstrap,
-    bootstrapScriptContent: waavyScriptContent,
-  };
-
-  if (_await || serialize) {
-    const markup = await pipeComponentToCollectedString(
-      <Component {...props} />,
-      renderOptions,
-    );
-
-    if (serialize) {
-      if (serialize === "json") {
-        process.stdout.write(
-          JSON.stringify({ html: markup, exitCode: 0, props }),
+    const waavyFileModules = await load(pathToComponent, "waavy");
+    if (waavyFileModules == null) {
+      /** Not using `waavy` exports pattern */
+      verbose &&
+        logger.extend("warn")(
+          "%s is not using `waavy` exports modules.",
+          pathToComponent,
         );
+    }
+
+    let props = getPropsFromOptions(options);
+    let tprops = structuredClone(props);
+
+    try {
+      props = await fetchLoaderProvProps(waavyFileModules, props, request);
+    } catch (e) {
+      verbose &&
+        logger.extend("error")(
+          e instanceof PropDataLoaderException ? e?.message : e,
+        );
+
+      /** Reassign to safe copy */
+      props = tprops;
+    }
+
+    const extension = path.extname(pathToComponent).replace(".", "");
+    if (!["js", "ts", "jsx", "tsx"].includes(extension)) {
+      throw new InvalidExtensionError(
+        "[renderAction]: An Exception was thrown: Invalid file extension - " +
+          extension,
+      );
+    }
+
+    let errorPage = defaultErrorPage;
+
+    if (errorComponentPath) {
+      try {
+        const customErrorPage = await getErrorPageMarkup(
+          {
+            errorPagePath: errorComponentPath,
+            errorPageComponentName: errorComponentName,
+          },
+          {},
+          {},
+        );
+        if (customErrorPage) {
+          errorPage = customErrorPage;
+        }
+      } catch (e) {
+        /** Swallow error page loading exceptions */
+      }
+    }
+
+    const waavyScriptContent = Hydra.createWindowAssignmentInlineScript({
+      props,
+      propsCacheKey: pcacheKey,
+      selector,
+    });
+
+    const renderOptions: RenderToReadableStreamOptions = {
+      bootstrapModules: bootstrap,
+      bootstrapScriptContent: waavyScriptContent,
+      onError(error, errorInfo) {},
+      progressiveChunkSize: asOptionalNumber(chunk),
+    };
+
+    const timeoutDuration = asOptionalNumber(maxTimeout);
+    if (!!timeoutDuration) {
+      const controller = new AbortController();
+      /**
+       * We request maxTimeout in seconds
+       */
+      const duration = timeoutDuration * 1000;
+      timeout = setTimeout(() => {
+        controller.abort();
+        timeoutFired = true;
+      }, duration);
+
+      signal = controller.signal;
+      renderOptions.signal = signal;
+    }
+
+    if (_await || serialize) {
+      const markup = await pipeComponentToCollectedString(
+        <Component {...props} />,
+        renderOptions,
+      );
+
+      if (serialize) {
+        if (serialize === "json") {
+          process.stdout.write(
+            JSON.stringify({ html: markup, exitCode: 0, props }),
+          );
+          return;
+        }
+      }
+
+      if (_await) {
+        process.stdout.write(markup);
         return;
       }
     }
 
-    if (_await) {
-      process.stdout.write(markup);
+    if (pipe) {
+      await pipeComponentToNamedPipe(options, Component, props, renderOptions);
+
       return;
     }
-  }
 
-  if (pipe) {
-    return await pipeComponentToNamedPipe(
-      options,
-      Component,
-      props,
-      renderOptions,
-    );
+    await pipeComponentToStdout(<Component {...props} />, renderOptions);
+    return;
+  } catch (error) {
+    handleError(error, verbose);
+  } finally {
+    if (signal && !timeoutFired && typeof timeout !== "undefined") {
+      try {
+        clearTimeout(timeout);
+      } catch (_) {}
+    }
   }
-
-  return await pipeComponentToStdout(<Component {...props} />, renderOptions);
 };
 
 export function setupRenderAction(program: Command) {
@@ -187,7 +246,24 @@ export function setupRenderAction(program: Command) {
       `A string indicating what field you want Waavy to assign props to on the window object.
       if left default, Waavy will put the props in window._p`,
     )
+    .option("v, --verbose", "Enables verbose log output", false)
+    .option(
+      "--max-timeout <number>",
+      "Number of seconds to wait before aborting server-rendering, flushing the remaining markup to the client, and defaulting to client side rendering",
+    )
+    .option(
+      "--chunk",
+      "Progressive chunk size, see <https://github.com/facebook/react/blob/14c2be8dac2d5482fda8a0906a31d239df8551fc/packages/react-server/src/ReactFizzServer.js#L210-L225>",
+    )
     .action(renderAction);
 
   return program;
 }
+
+/**
+ * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/try...catch#the_finally_block
+ * NOTE
+ * We probably never want to use finally to return, and since this is a void async function,
+ * we likely won't run into errors here. We should attempt to cleanup any timeouts/unresolved states
+ * before yielding back to the calling scope.
+ */
