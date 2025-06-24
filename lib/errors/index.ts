@@ -1,14 +1,12 @@
 import ComponentNotFoundError from "./ComponentNotFound";
 import InvalidExtensionError from "./InvalidExtension";
+import PropDataLoaderException from "./PropDataLoader";
 
-export class CustomError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = this.constructor.name;
-  }
-}
-
-export function handleError(error: unknown, verbose = false) {
+export function handleError(
+  error: unknown,
+  verbose = false,
+  errorPage?: string,
+) {
   if (error instanceof ComponentNotFoundError) {
     verbose && process.stderr.write(error.message);
     /**
@@ -35,3 +33,9 @@ export function handleError(error: unknown, verbose = false) {
     throw error;
   }
 }
+
+export {
+  ComponentNotFoundError,
+  InvalidExtensionError,
+  PropDataLoaderException,
+};

@@ -1,5 +1,5 @@
 import printf from "printf";
-import { CustomError } from "./index";
+import CustomError from "./CustomError";
 
 export default class PropDataLoaderException extends CustomError {
   constructor(message: string) {

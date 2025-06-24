@@ -1,4 +1,4 @@
-import { CustomError } from "./index";
+import CustomError from "./CustomError";
 
 export default class ComponentNotFoundError extends CustomError {
   constructor(componentPath: string, componentName: string) {

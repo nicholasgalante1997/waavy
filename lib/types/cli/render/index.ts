@@ -114,4 +114,12 @@ export type RenderActionOptions<Props = Record<string, unknown>> = {
    * @see https://github.com/facebook/react/blob/14c2be8dac2d5482fda8a0906a31d239df8551fc/packages/react-server/src/ReactFizzServer.js#L210-L225
    */
   chunk?: number | string;
+
+  /**
+   * Whether or not to render an Error page to the provided OutputStrategy if an Error occurs,
+   * or to fail silently
+   *
+   * @default false
+   */
+  failSilently?: boolean;
 };
