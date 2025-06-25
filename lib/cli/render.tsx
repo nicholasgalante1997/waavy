@@ -1,29 +1,23 @@
 import React from "react";
-import type { RenderToReadableStreamOptions } from "react-dom/server";
-
 import type { Command } from "commander";
-import path from "path";
 
 import {
   pipeComponentToStdout,
   pipeComponentToCollectedString,
 } from "@/server";
-import Hydra from "@/server/models/Hydra";
 import defaultErrorPage from "@/templates/waavy-error-page";
 import type { RenderAction } from "@/types";
-import { asOptionalNumber, load, logger } from "@/utils";
 import {
-  fetchLoaderProvProps,
-  getPropsFromOptions,
-  pipeComponentToNamedPipe,
-  getErrorPageMarkup,
-  loadErrorComponent,
+  createRenderOptions,
+  createWindowAssignmentInlineScript,
+  getComponentProps,
+  getErrorComponentOrNull,
   getOutputStrategy,
-} from "./utils";
+  loadComponent,
+  pipeComponentToNamedPipe,
+  validateComponentExtension
+} from "./utils/render";
 
-import ComponentNotFoundError from "@/errors/ComponentNotFound";
-import InvalidExtensionError from "@/errors/InvalidExtension";
-import PropDataLoaderException from "@/errors/PropDataLoader";
 import { handleError } from "@/errors";
 
 const renderAction: RenderAction = async (pathToComponent, options) => {
@@ -53,137 +47,26 @@ const renderAction: RenderAction = async (pathToComponent, options) => {
     timeoutFired = false;
 
   try {
-    /**
-     * Pre (Validation)
-     *
-     * Ensure we can load/parse the provided file
-     */
-    const extension = path.extname(pathToComponent).replace(".", "");
-    if (!["js", "ts", "jsx", "tsx"].includes(extension)) {
-      throw new InvalidExtensionError(
-        "[renderAction]: An Exception was thrown: Invalid file extension - " +
-          extension,
-      );
-    }
-
-    /**
-     * 1. Component Loading from Local Filesystem
-     */
-    const Component = await load(pathToComponent, name);
-    if (Component == null) {
-      throw new ComponentNotFoundError(pathToComponent, name || "default");
-    }
-
-    /**
-     * 2. Re-use provided path to load any potential Waavy module (loaders).
-     */
-    const waavyFileModules = await load(pathToComponent, "waavy");
-    if (waavyFileModules == null) {
-      /** Not using `waavy` exports pattern */
-      verbose &&
-        logger.extend("warn")(
-          "%s is not using `waavy` exports modules.",
-          pathToComponent,
-        );
-    }
-
-    /**
-     * 3. Generate Props
-     */
-    let props = getPropsFromOptions(options); /** Initial or default props */
-    const tprops =
-      structuredClone(
-        props,
-      ); /** Backup copy in case we corrupt props in the loader phase */
-
-    try {
-      /** Try to fetch any per request props */
-      props = await fetchLoaderProvProps(waavyFileModules, props, request);
-    } catch (e) {
-      verbose &&
-        logger.extend("error")(
-          e instanceof PropDataLoaderException ? e?.message : e,
-        );
-
-      /** Reassign to safe copy */
-      props = tprops;
-    }
-
-    /**
-     * 4. Create a client side window assignment script
-     * This is useful to props can remain equal across the server render
-     * and the client side hydration render.
-     */
-    const waavyScriptContent = Hydra.createWindowAssignmentInlineScript({
+    validateComponentExtension(pathToComponent);
+    const Component = await loadComponent(pathToComponent, name);
+    const ErrorComponent = await getErrorComponentOrNull(errorComponentPath, errorComponentName, options);
+    const props = await getComponentProps(pathToComponent, options);
+    const waavyScriptContent = createWindowAssignmentInlineScript({
       props,
       propsCacheKey: pcacheKey,
       selector,
     });
 
-    /**
-     * 5. Error Page Construction
-     * If provided, load a custom error page Component
-     */
-    let ErrorComponent = null;
-    if (errorComponentPath) {
-      try {
-        ErrorComponent = await loadErrorComponent({
-          errorPagePath: errorComponentPath,
-          errorPageComponentName: errorComponentName,
-        });
-      } catch (e) {
-        verbose &&
-          logger.extend("error")(
-            "An error was thrown trying to load the supplied error Component: %e",
-            e,
-          );
-        /** Swallow error page loading exceptions */
-        ErrorComponent = null;
-      }
-    }
-
-    /**
-     * 6. Create renderOptions that will be used to configure the ReactDOM render behavior
-     */
-    const renderOptions: RenderToReadableStreamOptions = {
-      bootstrapModules: bootstrap,
-      bootstrapScriptContent: waavyScriptContent,
-      onError(error, errorInfo) {
-        if (verbose) {
-          logger.extend("error")(
-            "An error was thrown during server side rendering",
-          );
-        }
-
-        if (ErrorComponent) {
-          try {
-            errorPage = getErrorPageMarkup(ErrorComponent, error, errorInfo);
-          } catch (e) {}
-        }
-      },
-      progressiveChunkSize: asOptionalNumber(chunk),
-    };
-
-    /**
-     * 7. If a user has supplied a render timeout,
-     * force client side rendering after the duration has elapsed
-     * using the AbortController signal pattern
-     */
-    const timeoutDuration = asOptionalNumber(maxTimeout);
-    if (!!timeoutDuration) {
-      const controller = new AbortController();
-      /**
-       * We request maxTimeout in seconds
-       */
-      const duration = timeoutDuration * 1000;
-      timeout = setTimeout(() => {
-        controller.abort();
-        timeoutFired = true;
-      }, duration);
-
-      signal = controller.signal;
-      renderOptions.signal = signal;
-    }
+    const renderOptions = createRenderOptions({
+      bootstrap,
+      ErrorComponent,
+      errorPage,
+      raOptions: options,
+      signal,
+      timeout,
+      timeoutFired,
+      waavyScriptContent
+    });
 
     /**
      * From this point on,
