@@ -2,7 +2,7 @@ import { Command } from "commander";
 
 import { setupProgramActions, setupProgramMetadata } from "./cli/index";
 import { setupPrehydrateAction } from "./cli/prehydrate";
-import { setupRenderAction } from "./cli/render";
+import { setupRenderAction } from "./cli/RenderAction";
 
 import { getVersion } from "./utils";
 import ProcessManager from "./utils/models/ProcessManager";
