@@ -4,16 +4,16 @@ class ProcessManager {
 
   setupHandlers() {
     process.on("uncaughtException", (error: Error) => {
-      console.error(`Waavy encountered an unrecoverable error.
-        ${error instanceof Error ? this.errorToString(error) : error}
-      `);
+      /**
+       * If telemetry is enabled, report the error
+       */
       this.forceExit(1);
     });
 
     process.on("unhandledRejection", (reason: unknown) => {
-      console.error(`Waavy encountered an unhandled promise rejection.
-        Reason: ${reason}
-      `);
+      /**
+       * If telemetry is enabled, report the reason for the rejected promise
+       */
       this.forceExit(1);
     });
 
@@ -22,54 +22,45 @@ class ProcessManager {
     process.on("SIGINT", () => this.gracefulShutdown("SIGINT"));
 
     // Handle broken pipes, etc.
-    process.on("SIGPIPE", () => {
-      console.log("SIGPIPE received");
-    });
+    // TODO determine what we want to do here
+    process.on("SIGPIPE", () => {});
   }
 
-  private async gracefulShutdown(signal: string) {
+  private async gracefulShutdown(
+    signal: string,
+    cleanupFn?: () => Promise<void>,
+  ) {
     if (this.isShuttingDown) return;
     this.isShuttingDown = true;
 
-    console.log(`Received ${signal}, initiating graceful shutdown...`);
-
     // Set a timeout to force exit if graceful shutdown takes too long
     const forceExitTimer = setTimeout(() => {
-      console.error("Graceful shutdown timeout, forcing exit");
       this.forceExit(1);
     }, this.shutdownTimeout);
 
     try {
       await this.cleanup();
       clearTimeout(forceExitTimer);
-      console.log("Graceful shutdown completed");
       process.exit(0);
     } catch (error) {
-      console.error("Error during graceful shutdown:", error);
       clearTimeout(forceExitTimer);
       this.forceExit(1);
     }
   }
 
-  private async cleanup() {
+  private async cleanup(cleanupFn?: () => Promise<void>) {
     /**
      * There may be processes we want to clean up here.
      * We'd need to share a signal with the renderer
      * Which is fine. Can look into passing refs into this instance in a sec
      */
+    try {
+      cleanupFn && (await cleanupFn());
+    } catch (e) {}
   }
 
   private forceExit(code: number) {
     process.exit(code);
-  }
-
-  private errorToString(error: Error) {
-    return `
-        (Error, kind: ${error.name})
-            Cause: ${error?.cause}
-            Details: ${error?.message}
-            Stack: ${error?.stack}
-    `;
   }
 }
 

@@ -29,8 +29,8 @@ type CreateRenderOptionsConfig = {
   bootstrap?: string[];
   ErrorComponent?: React.ComponentType<{ error: unknown }> | null;
   errorPage?: string;
-  raOptions?: RenderActionOptions,
-  signal?: AbortController['signal'],
+  raOptions?: RenderActionOptions;
+  signal?: AbortController["signal"];
   timeout?: NodeJS.Timeout;
   timeoutFired?: boolean;
   waavyScriptContent?: string;
@@ -49,14 +49,14 @@ export function validateComponentExtension(pathToComponent: string) {
   if (!["js", "ts", "jsx", "tsx"].includes(extension)) {
     throw new InvalidExtensionError(
       "[renderAction]: An Exception was thrown: Invalid file extension - " +
-        extension
+        extension,
     );
   }
 }
 
 export async function loadComponent(
   pathToComponent: string,
-  name?: string
+  name?: string,
 ): Promise<React.ComponentType<any>> {
   /**
    * 1. Component Loading from Local Filesystem
@@ -73,7 +73,7 @@ export async function loadComponent(
  */
 export async function getWaavyModules(
   pathToFile: string,
-  options?: RenderActionOptions
+  options?: RenderActionOptions,
 ) {
   const waavyFileModules = await load(pathToFile, "waavy");
   if (waavyFileModules == null) {
@@ -81,7 +81,7 @@ export async function getWaavyModules(
     options?.verbose &&
       logger.extend("warn")(
         "%s is not using `waavy` exports modules.",
-        pathToFile
+        pathToFile,
       );
 
     return null;
@@ -92,7 +92,7 @@ export async function getWaavyModules(
 
 export async function getComponentProps<Props extends {} = {}>(
   pathToComponent: string,
-  options: RenderActionOptions
+  options: RenderActionOptions,
 ) {
   const waavyFileModules = getWaavyModules(pathToComponent, options);
 
@@ -102,7 +102,7 @@ export async function getComponentProps<Props extends {} = {}>(
   let props = getPropsFromOptions(options); /** Initial or default props */
   const tprops =
     structuredClone(
-      props
+      props,
     ); /** Backup copy in case we corrupt props in the loader phase */
 
   try {
@@ -110,12 +110,12 @@ export async function getComponentProps<Props extends {} = {}>(
     props = await fetchLoaderProvProps(
       waavyFileModules,
       props,
-      options.request
+      options.request,
     );
   } catch (e) {
     options.verbose &&
       logger.extend("error")(
-        e instanceof PropDataLoaderException ? e?.message : e
+        e instanceof PropDataLoaderException ? e?.message : e,
       );
 
     /** Reassign to safe copy */
@@ -129,7 +129,7 @@ export async function getComponentProps<Props extends {} = {}>(
  * Loads props from options or sets props to the default value, an empty object.
  */
 export function getPropsFromOptions(
-  options: RenderActionOptions
+  options: RenderActionOptions,
 ): Record<string, unknown> {
   options.props ||= {};
   return typeof options?.props === "string"
@@ -143,7 +143,7 @@ export function getPropsFromOptions(
  * and the client side hydration render.
  */
 export function createWindowAssignmentInlineScript<Props>(
-  options: HydraWindowAssignmentScriptOptions<Props>
+  options: HydraWindowAssignmentScriptOptions<Props>,
 ) {
   return (
     "window.waavy = {};" +
@@ -159,7 +159,7 @@ export function createWindowAssignmentInlineScript<Props>(
 export async function getErrorComponentOrNull(
   errorComponentPath?: string,
   errorComponentName?: string,
-  options?: RenderActionOptions
+  options?: RenderActionOptions,
 ): Promise<React.ComponentType<{ error: unknown }>> {
   let ErrorComponent = null;
   if (errorComponentPath) {
@@ -172,7 +172,7 @@ export async function getErrorComponentOrNull(
       options?.verbose &&
         logger.extend("error")(
           "An error was thrown trying to load the supplied error Component: %e",
-          e
+          e,
         );
       /** Swallow error page loading exceptions */
       ErrorComponent = null;
@@ -201,7 +201,7 @@ export function createRenderOptions({
     onError(error, errorInfo) {
       if (raOptions?.verbose) {
         logger.extend("error")(
-          "An error was thrown during server side rendering"
+          "An error was thrown during server side rendering",
         );
       }
 
@@ -249,17 +249,17 @@ export async function pipeComponentToNamedPipe<
   options: RenderActionOptions,
   Component: React.ComponentType,
   props: Props = {} as Props,
-  renderToReadableStreamOptions: RenderToReadableStreamOptions = {}
+  renderToReadableStreamOptions: RenderToReadableStreamOptions = {},
 ) {
   const pipePath = path.relative(options.pipe!, import.meta.url);
   const writable = fs.createWriteStream(
-    path.relative(options.pipe!, import.meta.url)
+    path.relative(options.pipe!, import.meta.url),
   );
   try {
     await pipeComponentToNodeStream(
       <Component {...props} />,
       writable,
-      renderToReadableStreamOptions
+      renderToReadableStreamOptions,
     );
   } catch (error) {
     /** Think about constructing a specific subclass of Error for this */
@@ -276,7 +276,7 @@ export function getWaavyRenderContext(request?: Partial<Request>) {
 export async function fetchLoaderProvProps<Props extends {} = {}>(
   waavyFileModules: any,
   props: Props,
-  request: Partial<Request> = {}
+  request: Partial<Request> = {},
 ) {
   if (
     waavyFileModules &&
@@ -286,7 +286,7 @@ export async function fetchLoaderProvProps<Props extends {} = {}>(
     try {
       const loader = waavyFileModules?.dataLoader as LoaderFn<typeof props>;
       const loaderResult = await Promise.resolve(
-        await loader(request, getWaavyRenderContext())
+        await loader(request, getWaavyRenderContext()),
       );
       if (
         loaderResult &&
@@ -311,7 +311,7 @@ type ErrorPageConfiguration = {
 export function getErrorPageMarkup(
   ErrorComponent: React.ComponentType<any>,
   error: unknown,
-  errorInfo?: unknown
+  errorInfo?: unknown,
 ) {
   const page = transformComponentToString(<ErrorComponent error={error} />);
   return page;
@@ -354,12 +354,10 @@ export enum OutputStrategy {
  * - Static Server Side Generation (Static SSG for Static React Pages)
  */
 export function getOutputStrategy(
-  options: RenderActionOptions
+  options: RenderActionOptions,
 ): OutputStrategy {
   if (options.serialize) return OutputStrategy.SerializedJson;
   if (options.await) return OutputStrategy.StdoutString;
   if (options.pipe) return OutputStrategy.NamedPipe;
   return OutputStrategy.StdoutStream;
 }
-
-export function reportRenderError(error: unknown, errorInfo: any) {}

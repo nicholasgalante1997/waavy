@@ -32,6 +32,11 @@ export type RenderActionOptions<Props = Record<string, unknown>> = {
   cache?: boolean;
 
   /**
+   * A path to a directory where `waavy` will cache the result of the render computation.
+   */
+  cachePath?: string;
+
+  /**
    * The request object to pass to the loader function.
    */
   request?: Partial<Request>;

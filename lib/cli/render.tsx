@@ -14,8 +14,9 @@ import {
   getErrorComponentOrNull,
   getOutputStrategy,
   loadComponent,
+  OutputStrategy,
   pipeComponentToNamedPipe,
-  validateComponentExtension
+  validateComponentExtension,
 } from "./utils/render";
 
 import { handleError } from "@/errors";
@@ -27,17 +28,13 @@ const renderAction: RenderAction = async (pathToComponent, options) => {
     await: _await = false,
     bootstrap,
     cache = false,
-    chunk,
+    cachePath,
     errorComponentName,
     errorComponentPath,
     failSilently,
-    maxTimeout,
     pcacheKey,
     selector,
     name,
-    pipe,
-    request = {},
-    serialize = false,
     verbose = false,
   } = options;
 
@@ -49,7 +46,11 @@ const renderAction: RenderAction = async (pathToComponent, options) => {
   try {
     validateComponentExtension(pathToComponent);
     const Component = await loadComponent(pathToComponent, name);
-    const ErrorComponent = await getErrorComponentOrNull(errorComponentPath, errorComponentName, options);
+    const ErrorComponent = await getErrorComponentOrNull(
+      errorComponentPath,
+      errorComponentName,
+      options,
+    );
     const props = await getComponentProps(pathToComponent, options);
     const waavyScriptContent = createWindowAssignmentInlineScript({
       props,
@@ -65,7 +66,7 @@ const renderAction: RenderAction = async (pathToComponent, options) => {
       signal,
       timeout,
       timeoutFired,
-      waavyScriptContent
+      waavyScriptContent,
     });
 
     /**
@@ -86,34 +87,39 @@ const renderAction: RenderAction = async (pathToComponent, options) => {
      * @see https://react.dev/reference/react-dom/server/renderToReadableStream#recovering-from-errors-outside-the-shell
      */
 
-    if (_await || serialize) {
-      const markup = await pipeComponentToCollectedString(
-        <Component {...props} />,
-        renderOptions,
-      );
-
-      if (serialize) {
-        if (serialize === "json") {
-          process.stdout.write(
-            JSON.stringify({ html: markup, exitCode: 0, props }),
-          );
-          return;
-        }
+    switch (strategy) {
+      case OutputStrategy.NamedPipe: {
+        await pipeComponentToNamedPipe(
+          options,
+          Component,
+          props,
+          renderOptions,
+        );
+        return;
       }
-
-      if (_await) {
-        process.stdout.write(markup);
+      case OutputStrategy.SerializedJson: {
+        const markupAsString = await pipeComponentToCollectedString(
+          <Component {...props} />,
+          renderOptions,
+        );
+        process.stdout.write(
+          JSON.stringify({ html: markupAsString, exitCode: 0, props }),
+        );
+        return;
+      }
+      case OutputStrategy.StdoutString: {
+        const markupAsString = await pipeComponentToCollectedString(
+          <Component {...props} />,
+          renderOptions,
+        );
+        process.stdout.write(markupAsString);
+        return;
+      }
+      case OutputStrategy.StdoutStream: {
+        await pipeComponentToStdout(<Component {...props} />, renderOptions);
         return;
       }
     }
-
-    if (pipe) {
-      await pipeComponentToNamedPipe(options, Component, props, renderOptions);
-      return;
-    }
-
-    await pipeComponentToStdout(<Component {...props} />, renderOptions);
-    return;
   } catch (error) {
     if (!failSilently) {
       handleError(error, verbose, errorPage);
@@ -156,6 +162,11 @@ export function setupRenderAction(program: Command) {
       "--cache",
       "If this flag is set to true, Waavy renderer will spawn a secondary non-blocking Worker thread to write the result of the render operation to a local file cache. This is recommended for production when it's very likely your components aren't changing if props are the same, and we can use a cached result of the render operation in such a case.",
       false,
+    )
+    .option(
+      "--cache-path",
+      "A path to a directory where `waavy` will cache the result of the render computation.",
+      "node_modules/.cache/waavy/render-cache",
     )
     .option(
       "--pipe <path-to-pipe>",
