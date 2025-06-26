@@ -1,3 +1,5 @@
 import { waavy } from "@/browser";
 
-export {};
+export {
+    waavy
+};

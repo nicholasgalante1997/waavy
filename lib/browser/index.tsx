@@ -27,7 +27,7 @@ interface WaavyHydrationOverrides {
   pcacheKey?: string;
 }
 
-export function waavy<Props extends {} = {}>(
+function waavy<Props extends {} = {}>(
   App: React.FunctionComponent<Props>,
   overrides?: WaavyHydrationOverrides,
 ) {
@@ -37,8 +37,33 @@ export function waavy<Props extends {} = {}>(
     selector === "document" ? document : document.querySelector(selector);
 
   if (container) {
-    hydrateRoot(container, React.createElement(App, props));
+    hydrateRoot(
+      container, 
+      React.createElement(App, props),
+      {
+        onCaughtError(error, errorInfo) {
+          /**
+           * If telemetry is enabled, report exceptions
+           */
+        },
+        onRecoverableError(error, errorInfo) {
+          /**
+           * If telemetry is enabled, report exceptions
+           */
+        },
+        onUncaughtError(error, errorInfo) {
+          /**
+           * If telemetry is enabled, report exceptions
+           */
+        },
+      }
+    );
   } else {
     console.error("[Waavy::HydrationIssue] Container not found:", selector);
   }
 }
+
+waavy.getWaavyProps = wprops;
+
+export default waavy;
+export { waavy };
