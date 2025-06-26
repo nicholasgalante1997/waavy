@@ -2,6 +2,30 @@ import React from "react";
 import fs from "fs/promises";
 import path from "path";
 
+import {
+  DEFAULT_WAAVY_HYDRATION_SELECTOR,
+  DEFAULT_WAAVY_PROPS_CACHE_KEY,
+} from "@/constants";
+import { getVersion } from "@/utils";
+
+interface BundleInlineOptions {
+  loader: "js" | "jsx" | "ts" | "tsx";
+  target?: "browser" | "node" | "bun";
+  format?: "esm" | "cjs" | "iife";
+  minify?: boolean;
+}
+
+type HydraTemplateOptions = {
+  name?: string;
+  selector?: string;
+};
+
+type HydraWindowAssignmentScriptOptions<Props> = {
+  props: Props;
+  propsCacheKey?: string;
+  selector?: string;
+};
+
 export default class Hydra<Props> {
   Component?: React.ComponentType<Props>;
   props?: Props;
@@ -13,6 +37,20 @@ export default class Hydra<Props> {
 
   static create<Props>() {
     return new Hydra<Props>();
+  }
+
+  static createWindowAssignmentInlineScript<Props>(
+    options: HydraWindowAssignmentScriptOptions<Props>,
+  ) {
+    return `
+      window.waavy = {};
+      window.waavy.version = ${getVersion()};
+      window.waavy.keys = {};
+      window.waavy.keys.pcache = "${options.propsCacheKey || DEFAULT_WAAVY_PROPS_CACHE_KEY}";
+      window.waavy.keys.domselector = "${options.selector || DEFAULT_WAAVY_HYDRATION_SELECTOR}";
+      window[window.waavy.keys.pcache] = ${JSON.stringify(options.props)};
+      window.waavy.__$stash__.props = ${JSON.stringify(options.props)};
+    `;
   }
 
   constructor(
@@ -61,7 +99,7 @@ export default class Hydra<Props> {
     return this;
   }
 
-  async createBundle<Props>() {
+  async createBundle() {
     try {
       if (!this.verify()) {
         throw new Error(
@@ -72,7 +110,6 @@ export default class Hydra<Props> {
       const template = getHydraTemplate(
         this.pathToComponent!,
         getNodeModulesWaavyCache(),
-        (this.props || {}) as Props,
         {
           name: this.nonDefaultComponentName,
           selector: this.selector,
@@ -122,6 +159,18 @@ export default class Hydra<Props> {
     }
   }
 
+  createBootstrapPropsInlineScript() {
+    const waavyBrowserDTO = {
+      $react: {
+        root: { props: this.props || {} },
+      },
+    };
+    return `
+console.log('Page loaded, React will attempt hydration now...');
+window.__WAAVY__ = ${JSON.stringify(waavyBrowserDTO)};
+`;
+  }
+
   private verify(): boolean {
     if (this.Component == null) return false;
     if (this.extension == null) return false;
@@ -133,7 +182,6 @@ export default class Hydra<Props> {
 function getHydraTemplate<Props>(
   pathToComponent: string,
   baseDir: string,
-  props: Props,
   options: HydraTemplateOptions,
 ) {
   const componentPath = path.relative(baseDir, pathToComponent);
@@ -146,7 +194,7 @@ import React from 'react';
 import { hydrateRoot } from 'react-dom/client';
 import ${getImportName(options?.name)} from "${normalizedPath}";
 
-const props = ${JSON.stringify(props)};
+const props = window?.__WAAVY__?.$react?.root?.props || {};
 const selector = "${options?.selector || "#waavyroot"}";
 const container = document.querySelector(selector);
 
@@ -185,15 +233,8 @@ export async function bundleInlineCode(
   options: BundleInlineOptions = { loader: "tsx" },
   buildOptionOverrides: Partial<Bun.BuildConfig> = {},
   cache = true,
+  useCache = false,
 ): Promise<Bun.BuildOutput> {
-  /**
-   * Implement hash based cache busting
-   */
-  const integrityHash = await Bun.password.hash(code, {
-    algorithm: "bcrypt",
-    cost: 17,
-  });
-
   const tempFile = await getTempFileInNodeModulesCache(
     options.loader,
     Date.now().toString(),
@@ -214,7 +255,7 @@ export async function bundleInlineCode(
       external: [],
       minify,
       splitting: false,
-      sourcemap: "linked",
+      sourcemap: "none",
       root: ".",
       ...buildOptionOverrides,
     });
@@ -237,18 +278,6 @@ export async function bundleInlineCode(
     }
   }
 }
-
-interface BundleInlineOptions {
-  loader: "js" | "jsx" | "ts" | "tsx";
-  target?: "browser" | "node" | "bun";
-  format?: "esm" | "cjs" | "iife";
-  minify?: boolean;
-}
-
-type HydraTemplateOptions = {
-  name?: string;
-  selector?: string;
-};
 
 function getImportName(name?: string) {
   name ||= "default";
