@@ -31,7 +31,7 @@ export async function getErrorComponentOrNull(
   errorComponentPath?: string,
   errorComponentName?: string,
   options?: RenderActionOptions,
-): Promise<React.ComponentType<{ error: unknown }>> {
+): Promise<React.ComponentType<{ error: unknown }> | null> {
   let ErrorComponent = null;
   if (errorComponentPath) {
     try {
@@ -50,5 +50,5 @@ export async function getErrorComponentOrNull(
     }
   }
 
-  return ErrorComponent as React.ComponentType<{ error: unknown }>;
+  return ErrorComponent as React.ComponentType<{ error: unknown }> | null;
 }

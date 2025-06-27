@@ -30,7 +30,6 @@ const renderAction: RenderAction = async (pathToComponent, options) => {
     cachePath,
     errorComponentName,
     errorComponentPath,
-    failSilently,
     pcacheKey,
     selector,
     name,
@@ -120,9 +119,7 @@ const renderAction: RenderAction = async (pathToComponent, options) => {
       }
     }
   } catch (error) {
-    if (!failSilently) {
-      handleError(error, verbose, errorPage);
-    }
+    handleError(error, strategy, verbose, errorPage);
   } finally {
     if (signal && !timeoutFired && typeof timeout !== "undefined") {
       try {

@@ -1,3 +1,5 @@
+import { ComponentNotFoundError, ErrorCodes, InvalidExtensionError, PropDataLoaderException } from "@/errors";
+
 class ProcessManager {
   private isShuttingDown = false;
   private readonly shutdownTimeout = 10000;
@@ -7,6 +9,26 @@ class ProcessManager {
       /**
        * If telemetry is enabled, report the error
        */
+
+      /**
+       * In a number of cases, we re-throw the error,
+       * if we consider it to be unrecoverable.
+       * We can exit with different codes
+       * for different errors.
+       */
+
+      if (error instanceof ComponentNotFoundError) {
+        this.forceExit(ErrorCodes.ComponentNotFoundError);
+      }
+
+      if (error instanceof InvalidExtensionError) {
+        this.forceExit(ErrorCodes.InvalidComponentFileExtensionError);
+      }
+
+      if (error instanceof PropDataLoaderException) {
+        this.forceExit(ErrorCodes.PropDataLoaderThrewAnException);
+      }
+
       this.forceExit(1);
     });
 
@@ -14,7 +36,7 @@ class ProcessManager {
       /**
        * If telemetry is enabled, report the reason for the rejected promise
        */
-      this.forceExit(1);
+      this.forceExit(9);
     });
 
     // Graceful shutdown signals
@@ -39,7 +61,7 @@ class ProcessManager {
     }, this.shutdownTimeout);
 
     try {
-      await this.cleanup();
+      await this.cleanup(cleanupFn);
       clearTimeout(forceExitTimer);
       process.exit(0);
     } catch (error) {
