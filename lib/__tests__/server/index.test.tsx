@@ -15,7 +15,7 @@ import {
   transformComponentToString,
   transformComponentToReadableStream,
   pipeComponent,
-  pipeComponentToWritableCallback,
+  pipeComponentToWritableCallbacks,
   pipeComponentToStdout,
   pipeComponentToNodeStream,
 } from "@/server";
@@ -217,14 +217,16 @@ describe("pipeComponent", () => {
   });
 });
 
-describe("pipeComponentToWritableCallback", () => {
+describe("pipeComponentToWritableCallbacks", () => {
   it("should call callback with component chunks", async () => {
     const component = React.createElement(SimpleComponent);
     const chunks: string[] = [];
 
-    await pipeComponentToWritableCallback(component, (chunk) => {
-      chunks.push(chunk);
-    });
+    await pipeComponentToWritableCallbacks(component, [
+      (chunk) => {
+        chunks.push(chunk);
+      },
+    ]);
 
     const content = chunks.join("");
     expect(content).toContain('<div id="test">Hello World</div>');
@@ -235,9 +237,11 @@ describe("pipeComponentToWritableCallback", () => {
     const component = React.createElement(EmptyComponent);
     const chunks: string[] = [];
 
-    await pipeComponentToWritableCallback(component, (chunk) => {
-      if (chunk) chunks.push(chunk);
-    });
+    await pipeComponentToWritableCallbacks(component, [
+      (chunk) => {
+        if (chunk) chunks.push(chunk);
+      },
+    ]);
 
     // Should complete without errors even with minimal content
     expect(chunks.length).toBeGreaterThanOrEqual(0);
@@ -256,9 +260,11 @@ describe("pipeComponentToWritableCallback", () => {
     const component = React.createElement(LargeComponent);
     let callCount = 0;
 
-    await pipeComponentToWritableCallback(component, () => {
-      callCount++;
-    });
+    await pipeComponentToWritableCallbacks(component, [
+      () => {
+        callCount++;
+      },
+    ]);
 
     expect(callCount).toBeGreaterThan(0);
   });
@@ -267,9 +273,11 @@ describe("pipeComponentToWritableCallback", () => {
     const component = React.createElement(SimpleComponent);
 
     await expect(
-      pipeComponentToWritableCallback(component, () => {
-        throw new Error("Callback failed");
-      }),
+      pipeComponentToWritableCallbacks(component, [
+        () => {
+          throw new Error("Callback failed");
+        },
+      ]),
     ).rejects.toThrow("Callback failed");
   });
 
@@ -279,12 +287,36 @@ describe("pipeComponentToWritableCallback", () => {
     const component = React.createElement(UnicodeComponent);
     const chunks: string[] = [];
 
-    await pipeComponentToWritableCallback(component, (chunk) => {
-      chunks.push(chunk);
-    });
+    await pipeComponentToWritableCallbacks(component, [
+      (chunk) => {
+        chunks.push(chunk);
+      },
+    ]);
 
     const content = chunks.join("");
     expect(content).toContain("🚀 Hello 世界");
+  });
+
+  it("should call two separate callbacks", async () => {
+    const UnicodeComponent = () =>
+      React.createElement("div", null, "🚀 Hello 世界");
+    const component = React.createElement(UnicodeComponent);
+    const chunksA: string[] = [];
+    const chunksB: string[] = [];
+
+    await pipeComponentToWritableCallbacks(component, [
+      (chunk) => {
+        chunksA.push(chunk);
+      },
+      (chunk) => {
+        chunksB.push(chunk);
+      },
+    ]);
+
+    const content = chunksA.join("");
+    expect(content).toContain("🚀 Hello 世界");
+    expect(chunksA).toEqual(chunksB);
+    expect(chunksA.join("")).toEqual(chunksB.join(""));
   });
 });
 
@@ -497,9 +529,11 @@ describe("Integration tests", () => {
 
     // Test callback piping
     const chunks: string[] = [];
-    await pipeComponentToWritableCallback(component, (chunk) => {
-      chunks.push(chunk);
-    });
+    await pipeComponentToWritableCallbacks(component, [
+      (chunk) => {
+        chunks.push(chunk);
+      },
+    ]);
 
     const callbackContent = chunks.join("");
     expect(callbackContent).toContain("<title>Test Page</title>");
@@ -515,9 +549,11 @@ describe("Integration tests", () => {
 
     // Get stream version via callback
     const streamChunks: string[] = [];
-    await pipeComponentToWritableCallback(component, (chunk) => {
-      streamChunks.push(chunk);
-    });
+    await pipeComponentToWritableCallbacks(component, [
+      (chunk) => {
+        streamChunks.push(chunk);
+      },
+    ]);
     const streamResult = streamChunks.join("");
 
     // Both should contain the same essential content

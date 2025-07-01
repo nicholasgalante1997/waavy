@@ -50,6 +50,9 @@ export async function pipeComponentToWritableCallbacks(
   }
 }
 
+/**
+ * @deprecated
+ */
 export async function pipeComponentToWritableCallback(
   component: React.ReactElement,
   cb: (chunk: string) => void,
@@ -72,12 +75,18 @@ export async function pipeComponentToWritableCallback(
 export async function pipeComponentToCollectedString(
   component: React.ReactElement,
   options: ReactDOMServer.RenderToReadableStreamOptions = {},
+  listeners: ((chunk: string) => void | Promise<void>)[] = [],
   init?: string,
 ) {
   let stream = init || "";
-  await pipeComponentToWritableCallback(
+  await pipeComponentToWritableCallbacks(
     component,
-    (chunk) => (stream += chunk),
+    [
+      (chunk) => {
+        stream += chunk;
+      },
+      ...listeners,
+    ],
     options,
   );
   return stream;
@@ -86,10 +95,16 @@ export async function pipeComponentToCollectedString(
 export async function pipeComponentToStdout(
   component: React.ReactElement,
   options: ReactDOMServer.RenderToReadableStreamOptions = {},
+  listeners: ((chunk: string) => void | Promise<void>)[] = [],
 ) {
-  await pipeComponentToWritableCallback(
+  await pipeComponentToWritableCallbacks(
     component,
-    (chunk) => process.stdout.write(chunk),
+    [
+      (chunk) => {
+        process.stdout.write(chunk);
+      },
+      ...listeners,
+    ],
     options,
   );
 }
