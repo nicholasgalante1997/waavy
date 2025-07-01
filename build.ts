@@ -11,7 +11,10 @@ const outdir = path.join(process.cwd(), "out");
 const external = Object.keys(Package.peerDependencies);
 
 const sources = {
-  cli: "lib/cli.tsx",
+  cli: {
+    main: "lib/cli.tsx",
+    worker: "lib/_worker.tsx",
+  },
   exports: {
     server: "lib/exports/server.ts",
     browser: "lib/exports/browser.ts",
@@ -123,29 +126,11 @@ async function ensureOutDir() {
 }
 
 async function buildSources(verbose = false) {
-  const bunRuntimeOutputs = [sources.cli];
   const nodeRuntimeOutputs = [sources.exports.browser, sources.exports.server];
 
   let succeeded = true;
 
-  log("Starting bun runtime output generation...")
-  for (const bunOutput of bunRuntimeOutputs) {
-    const startTime = performance.now();
-    try {
-      const result = await Bun.build({
-        ...defaultBuildOptions,
-        entrypoints: [bunOutput],
-        target: "bun",
-        format: "esm",
-      });
-      handleBunBuildOutput(result, startTime, verbose);
-    } catch (error) {
-      log.extend("error")(`JavaScript build failed: ${error}`);
-      succeeded = false;
-    }
-  }
-
-  log("Starting node runtime output generation...")
+  log("Starting node runtime output generation...");
   for (const nodeOutput of nodeRuntimeOutputs) {
     const startTime = performance.now();
     try {
@@ -186,9 +171,10 @@ async function buildExecutable(
       "--minify",
       "--sourcemap",
       `--target=${targetConfig.target}`,
-      `--outfile=${outfile}`,
       ...external.map((pkg) => `--external=${pkg}`),
-      sources.cli,
+      sources.cli.main,
+      sources.cli.worker,
+      `--outfile=${outfile}`,
     ];
 
     log.extend("debug")(`Running: ${buildCommand.join(" ")}`);

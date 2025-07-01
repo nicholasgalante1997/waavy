@@ -32,7 +32,12 @@ export function setupRenderAction(program: Command) {
       false,
     )
     .option(
-      "--cache-path",
+      "--cache-type <bunfs,sqlite3>",
+      "Determines which approach to caching is used. Options: bun-fs, sqlite3",
+      "bunfs",
+    )
+    .option(
+      "--cache-path <path-to-directory>",
       "A path to a directory where `waavy` will cache the result of the render computation.",
       "node_modules/.cache/waavy/render-cache",
     )

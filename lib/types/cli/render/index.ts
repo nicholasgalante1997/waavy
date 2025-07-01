@@ -32,6 +32,13 @@ export type RenderActionOptions<Props = Record<string, unknown>> = {
   cache?: boolean;
 
   /**
+   * Approach to caching
+   *
+   * TODO fill this in
+   */
+  cacheType?: "bunfs" | "bunsqlite3";
+
+  /**
    * A path to a directory where `waavy` will cache the result of the render computation.
    */
   cachePath?: string;

@@ -1,7 +1,6 @@
-import type { WriteStream } from "fs";
 import React from "react";
 import * as ReactDOMServer from "react-dom/server";
-
+import type { WriteStream } from "fs";
 import { Readable } from "stream";
 
 export function transformComponentToString(
@@ -25,6 +24,30 @@ export async function pipeComponent<W extends WritableStream<T>, T = any>(
 ) {
   const stream = await transformComponentToReadableStream(component, options);
   await stream.pipeTo(writable);
+}
+
+/**
+ * TODO look into replacing all usages of `pipeComponentToWritableCallback` with this function
+ */
+export async function pipeComponentToWritableCallbacks(
+  component: React.ReactElement,
+  cbs: ((chunk: string) => void | Promise<void>)[],
+  options: ReactDOMServer.RenderToReadableStreamOptions = {},
+) {
+  const stream = await transformComponentToReadableStream(component, options);
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
+  let result: Bun.ReadableStreamDefaultReadResult<any> = {
+    value: undefined,
+    done: false,
+  };
+  while (!result.done) {
+    result = await reader.read();
+    const chunk = decoder.decode(result.value);
+    for (const cb of cbs) {
+      await Promise.resolve(cb(chunk));
+    }
+  }
 }
 
 export async function pipeComponentToWritableCallback(

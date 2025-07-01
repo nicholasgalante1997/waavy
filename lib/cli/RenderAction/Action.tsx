@@ -3,7 +3,7 @@ import React from "react";
 import { handleError } from "@/errors";
 import {
   pipeComponentToCollectedString,
-  pipeComponentToStdout
+  pipeComponentToStdout,
 } from "@/server";
 import defaultErrorPage from "@/templates/waavy-error-page";
 import type { RenderAction } from "@/types";
@@ -18,7 +18,7 @@ import {
   pipeComponentToNamedPipe,
   OutputStrategy,
   validateComponentExtension,
-} from './utils';
+} from "./utils";
 
 const renderAction: RenderAction = async (pathToComponent, options) => {
   const strategy = getOutputStrategy(options);
@@ -27,6 +27,7 @@ const renderAction: RenderAction = async (pathToComponent, options) => {
     await: _await = false,
     bootstrap,
     cache = false,
+    cacheType,
     cachePath,
     errorComponentName,
     errorComponentPath,
@@ -36,6 +37,7 @@ const renderAction: RenderAction = async (pathToComponent, options) => {
     verbose = false,
   } = options;
 
+  let cacheableRenderOutput = null;
   let errorPage = defaultErrorPage;
   let signal,
     timeout,
@@ -43,6 +45,19 @@ const renderAction: RenderAction = async (pathToComponent, options) => {
 
   try {
     validateComponentExtension(pathToComponent);
+
+    /**
+     * Cache Hit
+     */
+    if (cache) {
+      /**
+       * Bypass render & caching operation and exit early.
+       */
+    }
+
+    /**
+     * Cache-Miss
+     */
     const Component = await loadComponent(pathToComponent, name);
     const ErrorComponent = await getErrorComponentOrNull(
       errorComponentPath,
@@ -83,9 +98,37 @@ const renderAction: RenderAction = async (pathToComponent, options) => {
      * In this case the server onError will fire,
      * but the catch block will not fire and rendering will attempt to continue.
      * @see https://react.dev/reference/react-dom/server/renderToReadableStream#recovering-from-errors-outside-the-shell
+     *
+     * Caching,
+     *
+     *
      */
 
     switch (strategy) {
+      case OutputStrategy.SerializedJson: {
+        const html = await pipeComponentToCollectedString(
+          <Component {...props} />,
+          renderOptions,
+        );
+
+        cacheableRenderOutput = html;
+
+        process.stdout.write(JSON.stringify({ html, exitCode: 0, props }));
+        break;
+      }
+      case OutputStrategy.StdoutString: {
+        const html = await pipeComponentToCollectedString(
+          <Component {...props} />,
+          renderOptions,
+        );
+        cacheableRenderOutput = html;
+        process.stdout.write(html);
+        break;
+      }
+      case OutputStrategy.StdoutStream: {
+        await pipeComponentToStdout(<Component {...props} />, renderOptions);
+        break;
+      }
       case OutputStrategy.NamedPipe: {
         await pipeComponentToNamedPipe(
           options,
@@ -93,31 +136,17 @@ const renderAction: RenderAction = async (pathToComponent, options) => {
           props,
           renderOptions,
         );
-        return;
-      }
-      case OutputStrategy.SerializedJson: {
-        const markupAsString = await pipeComponentToCollectedString(
-          <Component {...props} />,
-          renderOptions,
-        );
-        process.stdout.write(
-          JSON.stringify({ html: markupAsString, exitCode: 0, props }),
-        );
-        return;
-      }
-      case OutputStrategy.StdoutString: {
-        const markupAsString = await pipeComponentToCollectedString(
-          <Component {...props} />,
-          renderOptions,
-        );
-        process.stdout.write(markupAsString);
-        return;
-      }
-      case OutputStrategy.StdoutStream: {
-        await pipeComponentToStdout(<Component {...props} />, renderOptions);
-        return;
+        break;
       }
     }
+
+    if (cache) {
+      /**
+       * 1. We want to cache the render operation, for re-use
+       */
+    }
+
+    return;
   } catch (error) {
     handleError(error, strategy, verbose, errorPage);
   } finally {
