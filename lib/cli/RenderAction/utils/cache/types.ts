@@ -13,8 +13,14 @@ export type ComponentRepresentation = [ComponentPath, ComponentName];
 export type CacheEntry = {
   createdAt: string | Date;
   id: string;
-  props: SharedArrayBuffer;
-  cachedRenderOutput: SharedArrayBuffer;
+  props: string;
+  cpath: string;
+  cname: string;
+  cacheKey: string;
+};
+
+export type CacheEntryWithRenderOutput = CacheEntry & {
+  cachedRenderOutput: string;
 };
 
 export type WriteEntryToCacheOptions<Props extends SerializableObject> = {

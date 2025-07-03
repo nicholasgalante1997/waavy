@@ -1,4 +1,7 @@
+import type Workers from "@/workers";
+
 export type RenderContext = {};
+
 export type LoaderFn<Props> = (
   request: Partial<Request>,
   ctx: RenderContext,
@@ -7,6 +10,7 @@ export type LoaderFn<Props> = (
 export type RenderAction = (
   pathToComponent: string,
   options: RenderActionOptions,
+  wm: Workers /** TODO run benchmarks to see what the performance benefit is of using workers to perform caching operations. */,
 ) => void | Promise<void>;
 
 export type RenderActionOptions<Props = Record<string, unknown>> = {
@@ -39,9 +43,9 @@ export type RenderActionOptions<Props = Record<string, unknown>> = {
   cacheType?: "bunfs" | "bunsqlite3";
 
   /**
-   * A path to a directory where `waavy` will cache the result of the render computation.
+   * A string representing a password to be used for encrypting cached files
    */
-  cachePath?: string;
+  cacheKey?: string;
 
   /**
    * The request object to pass to the loader function.

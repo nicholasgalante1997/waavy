@@ -8,6 +8,8 @@ export async function load(filepath: string, name: string = "default") {
   return loadedModule[name] || null;
 }
 
+export const noop = () => {};
+
 export * from "./log";
 export * from "./numbers";
 export * from "./objects";

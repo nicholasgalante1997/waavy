@@ -3,6 +3,7 @@ import type { OutputStrategy } from "@/cli/RenderAction/utils";
 import ComponentNotFoundError from "./ComponentNotFound";
 import InvalidExtensionError from "./InvalidExtension";
 import PropDataLoaderException from "./PropDataLoader";
+import UnserializableObjectError from "./UnserializableObjectError";
 
 export enum ErrorCodes {
   ComponentNotFoundError = 4,
@@ -88,4 +89,5 @@ export {
   ComponentNotFoundError,
   InvalidExtensionError,
   PropDataLoaderException,
+  UnserializableObjectError,
 };

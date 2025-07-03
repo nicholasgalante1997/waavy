@@ -11,6 +11,7 @@ export function serializable(props: unknown): boolean {
   try {
     // This will throw if attempting to clone a non-serializable object, i.e. functions
     bun_serialize(props);
+    JSON.stringify(props);
     return true;
   } catch (e) {
     return false;

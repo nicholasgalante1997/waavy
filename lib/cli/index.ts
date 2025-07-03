@@ -13,14 +13,16 @@ export function setupProgramMetadata(
       "A library to support rendering React components in non-javascript server environments",
     );
 
-  Object.defineProperty(program, "_workerManager", {
-    get() {
-      return workerManager;
-    },
-    set(v) {
-      /** No overwriting workerManager */
-    },
-  });
+  if (workerManager) {
+    Object.defineProperty(program, "_workerManager", {
+      get(): Workers {
+        return workerManager;
+      },
+      set(v) {
+        /** No overwriting workerManager */
+      },
+    });
+  }
 
   return program;
 }

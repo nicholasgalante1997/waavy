@@ -66,7 +66,7 @@ export async function getComponentProps<Props extends {} = {}>(
   pathToComponent: string,
   options: RenderActionOptions,
 ) {
-  const waavyFileModules = getWaavyModules(pathToComponent, options);
+  const waavyFileModules = await getWaavyModules(pathToComponent, options);
 
   let props = getPropsFromOptions(options); /** Initial or default props */
   const tprops =
