@@ -1,7 +1,6 @@
-import type { WriteStream } from "fs";
 import React from "react";
 import * as ReactDOMServer from "react-dom/server";
-
+import type { WriteStream } from "fs";
 import { Readable } from "stream";
 
 export function transformComponentToString(
@@ -27,6 +26,33 @@ export async function pipeComponent<W extends WritableStream<T>, T = any>(
   await stream.pipeTo(writable);
 }
 
+/**
+ * TODO look into replacing all usages of `pipeComponentToWritableCallback` with this function
+ */
+export async function pipeComponentToWritableCallbacks(
+  component: React.ReactElement,
+  cbs: ((chunk: string) => void | Promise<void>)[],
+  options: ReactDOMServer.RenderToReadableStreamOptions = {},
+) {
+  const stream = await transformComponentToReadableStream(component, options);
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
+  let result: Bun.ReadableStreamDefaultReadResult<any> = {
+    value: undefined,
+    done: false,
+  };
+  while (!result.done) {
+    result = await reader.read();
+    const chunk = decoder.decode(result.value);
+    for (const cb of cbs) {
+      await Promise.resolve(cb(chunk));
+    }
+  }
+}
+
+/**
+ * @deprecated
+ */
 export async function pipeComponentToWritableCallback(
   component: React.ReactElement,
   cb: (chunk: string) => void,
@@ -49,12 +75,18 @@ export async function pipeComponentToWritableCallback(
 export async function pipeComponentToCollectedString(
   component: React.ReactElement,
   options: ReactDOMServer.RenderToReadableStreamOptions = {},
+  listeners: ((chunk: string) => void | Promise<void>)[] = [],
   init?: string,
 ) {
   let stream = init || "";
-  await pipeComponentToWritableCallback(
+  await pipeComponentToWritableCallbacks(
     component,
-    (chunk) => (stream += chunk),
+    [
+      (chunk) => {
+        stream += chunk;
+      },
+      ...listeners,
+    ],
     options,
   );
   return stream;
@@ -63,10 +95,16 @@ export async function pipeComponentToCollectedString(
 export async function pipeComponentToStdout(
   component: React.ReactElement,
   options: ReactDOMServer.RenderToReadableStreamOptions = {},
+  listeners: ((chunk: string) => void | Promise<void>)[] = [],
 ) {
-  await pipeComponentToWritableCallback(
+  await pipeComponentToWritableCallbacks(
     component,
-    (chunk) => process.stdout.write(chunk),
+    [
+      (chunk) => {
+        process.stdout.write(chunk);
+      },
+      ...listeners,
+    ],
     options,
   );
 }

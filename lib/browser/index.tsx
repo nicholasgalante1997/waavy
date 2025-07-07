@@ -37,27 +37,23 @@ function waavy<Props extends {} = {}>(
     selector === "document" ? document : document.querySelector(selector);
 
   if (container) {
-    hydrateRoot(
-      container, 
-      React.createElement(App, props),
-      {
-        onCaughtError(error, errorInfo) {
-          /**
-           * If telemetry is enabled, report exceptions
-           */
-        },
-        onRecoverableError(error, errorInfo) {
-          /**
-           * If telemetry is enabled, report exceptions
-           */
-        },
-        onUncaughtError(error, errorInfo) {
-          /**
-           * If telemetry is enabled, report exceptions
-           */
-        },
-      }
-    );
+    hydrateRoot(container, React.createElement(App, props), {
+      onCaughtError(error, errorInfo) {
+        /**
+         * If telemetry is enabled, report exceptions
+         */
+      },
+      onRecoverableError(error, errorInfo) {
+        /**
+         * If telemetry is enabled, report exceptions
+         */
+      },
+      onUncaughtError(error, errorInfo) {
+        /**
+         * If telemetry is enabled, report exceptions
+         */
+      },
+    });
   } else {
     console.error("[Waavy::HydrationIssue] Container not found:", selector);
   }

@@ -3,7 +3,7 @@ import printf from "printf";
 
 const logger = debug("waavy");
 
-async function writeToFsLogFile(...args: any[]) {
+async function write(...args: any[]) {
   const _namespace = logger.namespace;
   const diff = logger.diff;
 
@@ -23,13 +23,13 @@ async function writeToFsLogFile(...args: any[]) {
 /**
  * @see https://www.npmjs.com/package/debug#output-streams
  */
-logger.log = writeToFsLogFile;
+logger.log = write;
 
-const b_extend = logger.extend.bind(logger);
+const extend = logger.extend.bind(logger);
 
 logger.extend = function (_namespace: string, delimiter?: string) {
-  const child = b_extend(_namespace);
-  child.log = writeToFsLogFile;
+  const child = extend(_namespace);
+  child.log = write;
   return child;
 };
 

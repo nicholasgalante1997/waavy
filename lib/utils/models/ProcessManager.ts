@@ -1,4 +1,10 @@
-import { ComponentNotFoundError, ErrorCodes, InvalidExtensionError, PropDataLoaderException } from "@/errors";
+// @no-test
+import {
+  ComponentNotFoundError,
+  ErrorCodes,
+  InvalidExtensionError,
+  PropDataLoaderException,
+} from "@/errors";
 
 class ProcessManager {
   private isShuttingDown = false;

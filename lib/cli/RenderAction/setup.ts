@@ -1,4 +1,5 @@
 import type { Command } from "commander";
+import type Workers from "@/workers";
 import renderAction from "./Action";
 
 export function setupRenderAction(program: Command) {
@@ -32,9 +33,12 @@ export function setupRenderAction(program: Command) {
       false,
     )
     .option(
-      "--cache-path",
-      "A path to a directory where `waavy` will cache the result of the render computation.",
-      "node_modules/.cache/waavy/render-cache",
+      "--cache-type <bunfs,bunsqlite3>",
+      "Determines which approach to caching is used. Options: bun-fs, sqlite3",
+    )
+    .option(
+      "--cache-key <password>",
+      "A string representing a password to be used for encrypting cached files",
     )
     .option(
       "--pipe <path-to-pipe>",
@@ -91,7 +95,14 @@ export function setupRenderAction(program: Command) {
       "Whether or not to render an Error page to the provided OutputStrategy if an Error occurs, or to fail silently",
       false,
     )
-    .action(renderAction);
+    .action(
+      async (pathToComponent, options) =>
+        await renderAction(
+          pathToComponent,
+          options,
+          (program as any)._workerManager as Workers,
+        ),
+    );
 
   return program;
 }

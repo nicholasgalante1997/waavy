@@ -3,7 +3,7 @@ import type { RenderToReadableStreamOptions } from "react-dom/server";
 import fs from "fs";
 import path from "path";
 
-import { pipeComponentToNodeStream } from "@/server"
+import { pipeComponentToNodeStream } from "@/server";
 import type { RenderActionOptions } from "@/types";
 
 /**

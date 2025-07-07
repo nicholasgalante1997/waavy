@@ -1,6 +1,10 @@
 import React from "react";
 import path from "path";
-import { ComponentNotFoundError, InvalidExtensionError, PropDataLoaderException } from "@/errors";
+import {
+  ComponentNotFoundError,
+  InvalidExtensionError,
+  PropDataLoaderException,
+} from "@/errors";
 import { load, logger } from "@/utils";
 import type { LoaderFn, RenderActionOptions } from "@/types";
 
@@ -17,7 +21,7 @@ export function validateComponentExtension(pathToComponent: string) {
   if (!["js", "ts", "jsx", "tsx"].includes(extension)) {
     throw new InvalidExtensionError(
       "[waavy::renderAction::validateComponentExtension]: An Exception was thrown: Invalid file extension - " +
-        extension
+        extension,
     );
   }
 }
@@ -62,11 +66,8 @@ export async function getComponentProps<Props extends {} = {}>(
   pathToComponent: string,
   options: RenderActionOptions,
 ) {
-  const waavyFileModules = getWaavyModules(pathToComponent, options);
+  const waavyFileModules = await getWaavyModules(pathToComponent, options);
 
-  /**
-   * 3. Generate Props
-   */
   let props = getPropsFromOptions(options); /** Initial or default props */
   const tprops =
     structuredClone(
@@ -104,7 +105,6 @@ export function getPropsFromOptions(
     ? JSON.parse(options?.props)
     : options.props;
 }
-
 
 export function getWaavyRenderContext(request?: Partial<Request>) {
   return {};

@@ -3,6 +3,7 @@ import type { OutputStrategy } from "@/cli/RenderAction/utils";
 import ComponentNotFoundError from "./ComponentNotFound";
 import InvalidExtensionError from "./InvalidExtension";
 import PropDataLoaderException from "./PropDataLoader";
+import UnserializableObjectError from "./UnserializableObjectError";
 
 export enum ErrorCodes {
   ComponentNotFoundError = 4,
@@ -14,7 +15,7 @@ export async function handleError(
   error: unknown,
   outputStrategy: OutputStrategy,
   verbose = false,
-  errorPage?: string
+  errorPage?: string,
 ) {
   if (verbose) {
     /**
@@ -49,7 +50,7 @@ export async function handleError(
      * Why re-throw instead of process.exit(...) here?
      * We have cleanup functions we want to run, which live in a finally clause,
      * which will run if we throw, but not if we process.exit from here.
-     * 
+     *
      * In this case, if we do have an error page, we want to report the error page string to stderr
      * if a consumer is listening to stderr, they can stream the fallback response
      */
@@ -68,7 +69,6 @@ export async function handleError(
 
     throw error;
   }
-
 
   throw error;
 }
@@ -89,4 +89,5 @@ export {
   ComponentNotFoundError,
   InvalidExtensionError,
   PropDataLoaderException,
+  UnserializableObjectError,
 };

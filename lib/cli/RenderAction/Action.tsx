@@ -3,11 +3,17 @@ import React from "react";
 import { handleError } from "@/errors";
 import {
   pipeComponentToCollectedString,
-  pipeComponentToStdout
+  pipeComponentToStdout,
 } from "@/server";
 import defaultErrorPage from "@/templates/waavy-error-page";
 import type { RenderAction } from "@/types";
+import {
+  WorkerMessageDataAction,
+  type CacheRenderOutputMessagePayload,
+} from "@/types/worker";
+import { createWorkerMessageData } from "@/workers";
 
+import CacheManager from "./models/CacheManager";
 import {
   createRenderOptions,
   createWindowAssignmentInlineScript,
@@ -18,24 +24,25 @@ import {
   pipeComponentToNamedPipe,
   OutputStrategy,
   validateComponentExtension,
-} from './utils';
+} from "./utils";
 
-const renderAction: RenderAction = async (pathToComponent, options) => {
-  const strategy = getOutputStrategy(options);
-
+const renderAction: RenderAction = async (pathToComponent, options, wm) => {
   const {
     await: _await = false,
     bootstrap,
     cache = false,
-    cachePath,
+    cacheKey,
+    cacheType,
     errorComponentName,
     errorComponentPath,
     pcacheKey,
     selector,
-    name,
+    name = "default",
     verbose = false,
   } = options;
 
+  const strategy = getOutputStrategy(options);
+  let cacheableRenderOutput: string | null = null;
   let errorPage = defaultErrorPage;
   let signal,
     timeout,
@@ -43,13 +50,52 @@ const renderAction: RenderAction = async (pathToComponent, options) => {
 
   try {
     validateComponentExtension(pathToComponent);
+
+    const props = await getComponentProps(pathToComponent, options);
+
+    if (cache && cacheKey && cacheType) {
+      const hasCached = CacheManager.isInCache(pathToComponent, name, props);
+
+      if (hasCached) {
+        const cm = new CacheManager({
+          key: cacheKey,
+          type: cacheType,
+          component: {
+            name,
+            path: pathToComponent,
+            props,
+          },
+        });
+        const ce = await cm.find();
+        if (ce) {
+          const { cachedRenderOutput } = ce;
+          switch (strategy) {
+            case OutputStrategy.StdoutStream:
+            case OutputStrategy.StdoutString:
+              !process.stdout.write(cachedRenderOutput) &&
+                process.stdout.emit("drain");
+              return;
+            case OutputStrategy.SerializedJson:
+              !process.stdout.write(
+                JSON.stringify({
+                  html: cacheableRenderOutput,
+                  exitCode: 0,
+                  props,
+                }),
+              );
+              return;
+          }
+        }
+      }
+    }
+
     const Component = await loadComponent(pathToComponent, name);
     const ErrorComponent = await getErrorComponentOrNull(
       errorComponentPath,
       errorComponentName,
       options,
     );
-    const props = await getComponentProps(pathToComponent, options);
+
     const waavyScriptContent = createWindowAssignmentInlineScript({
       props,
       propsCacheKey: pcacheKey,
@@ -83,9 +129,86 @@ const renderAction: RenderAction = async (pathToComponent, options) => {
      * In this case the server onError will fire,
      * but the catch block will not fire and rendering will attempt to continue.
      * @see https://react.dev/reference/react-dom/server/renderToReadableStream#recovering-from-errors-outside-the-shell
+     *
+     * Caching
+     *
+     * Caching can be enabled by passing the `--cache` flag.
+     *
+     * If you enable caching, Waavy will use a combination of the
+     *
+     * - path to the Component
+     * - the name of the Component
+     * - props
+     *
+     * to create a serialized cache entry after rendering the Component.
+     *
+     * On subsequent requests to render that Component,
+     *
+     * Waavy will check the cache and if an entry exists with equal props,
+     * it will stream the cached render output instead of re-rendering the page.
+     *
+     * You should only use this if your React Component Pages are pure functions.
+     *
+     * Waavy has two approaches to caching.
+     *
+     * 1. Local File System Caching (bunfs)
+     *
+     * If you want us to cache the file, and you choose the `bunfs` option,
+     *
+     * - we will create a directory under node_modules/.cache/waavy
+     * - we will create a CacheEntry object
+     * - we will write the CacheEntry object to a directory under node_modules/.cache/waavy/hash-of-path-and-component-name/uuid.json
+     *
+     * And then on subsequent renders, we will check node_modules/.cache/waavy/hash-of-path-and-component-name/
+     *
+     * and compare props to provided props, and if we match, we will return the rendered output.
+     *
+     * 2. Local File System Database (bunsqlite3)
+     *
+     * If you want us to cache the file, and you choose the `bunsqlite3` option,
+     *
+     *
      */
-
     switch (strategy) {
+      case OutputStrategy.SerializedJson: {
+        const html = await pipeComponentToCollectedString(
+          <Component {...props} />,
+          renderOptions,
+        );
+        if (cache) {
+          cacheableRenderOutput = html;
+        }
+        process.stdout.write(JSON.stringify({ html, exitCode: 0, props }));
+        break;
+      }
+      case OutputStrategy.StdoutString: {
+        const html = await pipeComponentToCollectedString(
+          <Component {...props} />,
+          renderOptions,
+        );
+        if (cache) {
+          cacheableRenderOutput = html;
+        }
+        process.stdout.write(html);
+        break;
+      }
+      case OutputStrategy.StdoutStream: {
+        if (cache) {
+          const updateCacheableRenderOutput = (chunk: string) => {
+            if (cacheableRenderOutput == null) cacheableRenderOutput = "";
+            cacheableRenderOutput += chunk;
+          };
+          const listeners = [updateCacheableRenderOutput];
+          await pipeComponentToStdout(
+            <Component {...props} />,
+            renderOptions,
+            listeners,
+          );
+        } else {
+          await pipeComponentToStdout(<Component {...props} />, renderOptions);
+        }
+        break;
+      }
       case OutputStrategy.NamedPipe: {
         await pipeComponentToNamedPipe(
           options,
@@ -93,31 +216,27 @@ const renderAction: RenderAction = async (pathToComponent, options) => {
           props,
           renderOptions,
         );
-        return;
-      }
-      case OutputStrategy.SerializedJson: {
-        const markupAsString = await pipeComponentToCollectedString(
-          <Component {...props} />,
-          renderOptions,
-        );
-        process.stdout.write(
-          JSON.stringify({ html: markupAsString, exitCode: 0, props }),
-        );
-        return;
-      }
-      case OutputStrategy.StdoutString: {
-        const markupAsString = await pipeComponentToCollectedString(
-          <Component {...props} />,
-          renderOptions,
-        );
-        process.stdout.write(markupAsString);
-        return;
-      }
-      case OutputStrategy.StdoutStream: {
-        await pipeComponentToStdout(<Component {...props} />, renderOptions);
-        return;
+        break;
       }
     }
+
+    if (cache && cacheType && cacheKey && cacheableRenderOutput) {
+      const worker = wm.createWorker();
+      const message = createWorkerMessageData<CacheRenderOutputMessagePayload>(
+        WorkerMessageDataAction.Cache,
+        {
+          cachedRenderOutput: cacheableRenderOutput,
+          cacheKey,
+          cacheType,
+          cname: name,
+          cpath: pathToComponent,
+          props,
+        },
+      );
+      worker.postMessage(message);
+    }
+
+    return;
   } catch (error) {
     handleError(error, strategy, verbose, errorPage);
   } finally {
@@ -125,6 +244,15 @@ const renderAction: RenderAction = async (pathToComponent, options) => {
       try {
         clearTimeout(timeout);
       } catch (_) {}
+    }
+
+    if (strategy !== OutputStrategy.NamedPipe) {
+      /**
+       * Flush stdout
+       */
+      if (process.stdout.writableNeedDrain) {
+        process.stdout.emit("drain");
+      }
     }
   }
 };

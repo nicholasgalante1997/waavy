@@ -1,3 +1,4 @@
+// @no-test
 import pkg from "@pkg/metadata";
 
 export function getVersion() {

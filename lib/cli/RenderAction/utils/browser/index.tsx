@@ -1,6 +1,9 @@
 import React from "react";
 import type { RenderToReadableStreamOptions } from "react-dom/server";
-import { DEFAULT_WAAVY_HYDRATION_SELECTOR, DEFAULT_WAAVY_PROPS_CACHE_KEY } from "@/constants";
+import {
+  DEFAULT_WAAVY_HYDRATION_SELECTOR,
+  DEFAULT_WAAVY_PROPS_CACHE_KEY,
+} from "@/constants";
 import type { RenderActionOptions } from "@/types";
 import { asOptionalNumber, getVersion, logger } from "@/utils";
 import { getErrorPageMarkup } from "../errors";
