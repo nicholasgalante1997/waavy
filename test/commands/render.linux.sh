@@ -14,4 +14,6 @@ time ./out/waavy-linux-x64-modern render ./lib/__tests__/components/MinimalJsx.j
 echo "\n\n\n\t<render/linux/sh -- Minimal Javascript>\n\n\n" && \
 time ./out/waavy-linux-x64-modern render ./lib/__tests__/components/Extended.tsx --props "{\"items\": [\"One\", \"Two\", \"Three\"]}" && \
 echo "\n\n\n\t<render/linux/sh -- Extended Typescript>\n\n\n" && \
+time ./out/waavy-linux-x64-modern render ./lib/__tests__/components/WithLoader.tsx --props "{}" && \
+echo "\n\n\n\t<render/linux/sh -- WithLoader Typescript>\n\n\n" && \
 exit 0;
