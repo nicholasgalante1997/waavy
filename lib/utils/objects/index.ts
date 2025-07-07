@@ -1,14 +1,14 @@
-export function objectIsEmpty<O extends object = {}>(o: O) {
-  return (
-    Object.keys(o).length === 0 &&
-    Object.values(o).length === 0 &&
-    Object.getOwnPropertyNames(o).length === 0
-  );
+export function objectIsEmpty<O extends object = {}>(
+  o: O,
+  strict = false,
+): boolean {
+  const hasNoEnumeratedProperties =
+    Object.keys(o).length === 0 && Object.values(o).length === 0;
+  if (!strict) return hasNoEnumeratedProperties;
+  const hasNoProperties = Object.getOwnPropertyNames(o).length === 0;
+  return hasNoEnumeratedProperties && hasNoProperties;
 }
 
-/**
- * TODO (nick) Write tests for this
- */
 export function createDeterministicStructure(obj: object) {
   function processValue(value: unknown): any {
     if (value === null || typeof value !== "object") {

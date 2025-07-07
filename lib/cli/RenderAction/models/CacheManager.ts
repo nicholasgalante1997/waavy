@@ -1,5 +1,4 @@
 import type { RenderActionOptions } from "@/types";
-import { createDeterministicStructure } from "@/utils";
 
 import type {
   CacheEntry,
@@ -10,6 +9,7 @@ import CacheEncryption from "./CacheEncryption";
 import CacheSerializer from "./CacheSerializer";
 import CacheBunFs from "./CacheBunFs";
 import CacheBunSqlite3 from "./CacheSqlite3";
+import RenderCacheHeaderDatabase from "./CacheHeaderDatabase";
 
 type CacheType = Exclude<RenderActionOptions["cacheType"], undefined>;
 
@@ -24,8 +24,8 @@ type CacheManagerConstructorOptions = {
 };
 
 export default class CacheManager {
-  private static _header_cache = new Map<string, Set<string>>();
-  private static _enc_keys = new Map();
+  private static _hcache_db: RenderCacheHeaderDatabase =
+    new RenderCacheHeaderDatabase();
 
   private id: string;
   private type: CacheType;
@@ -33,15 +33,6 @@ export default class CacheManager {
   private cname: string;
   private cprops: unknown;
   private cacheKey: string;
-
-  constructor(options: CacheManagerConstructorOptions) {
-    this.id = Bun.randomUUIDv7();
-    this.type = options.type;
-    this.cacheKey = options.key;
-    this.cname = options.component.name;
-    this.cpath = options.component.path;
-    this.cprops = options.component.props;
-  }
 
   public static isInCache(cpath: string, cname: string, props: unknown) {
     /**
@@ -57,9 +48,12 @@ export default class CacheManager {
     if (typeof props !== "object") return false;
 
     return Boolean(
-      CacheManager._header_cache
-        .get(CacheManager.createHeaderCacheKey(cpath, cname))
-        ?.has(CacheManager.transformPropsToDeterministicString(props)),
+      CacheManager._hcache_db.find({
+        cname: cname,
+        cpath: cpath,
+        props: props,
+        id: CacheManager.createHeaderCacheKey(cpath, cname),
+      }),
     );
   }
 
@@ -67,10 +61,30 @@ export default class CacheManager {
     return CacheEncryption.sha256Hash(cpath.concat("::", cname));
   }
 
-  private static transformPropsToDeterministicString(props: unknown) {
-    return CacheEncryption.sha256Hash(
-      JSON.stringify(createDeterministicStructure(props as object)),
-    );
+  private static addToHeaderCache(
+    cpath: string,
+    cname: string,
+    props: unknown,
+  ): boolean {
+    try {
+      return CacheManager._hcache_db.add({
+        cname,
+        cpath,
+        props,
+        id: CacheManager.createHeaderCacheKey(cpath, cname),
+      });
+    } catch (e) {
+      return false;
+    }
+  }
+
+  constructor(options: CacheManagerConstructorOptions) {
+    this.id = Bun.randomUUIDv7();
+    this.type = options.type;
+    this.cacheKey = options.key;
+    this.cname = options.component.name;
+    this.cpath = options.component.path;
+    this.cprops = options.component.props;
   }
 
   async cache(renderOutput: string) {
@@ -82,7 +96,11 @@ export default class CacheManager {
           : new CacheBunSqlite3(cacheEntry);
       const didCache = await _cache.cache(cacheEntry.cachedRenderOutput);
       if (didCache) {
-        this.addToHeaderCache();
+        CacheManager.addToHeaderCache(
+          cacheEntry.cpath,
+          cacheEntry.cname,
+          this.cprops,
+        );
       }
     }
   }
@@ -130,18 +148,5 @@ export default class CacheManager {
       props: JSON.stringify(this.cprops),
       cacheKey: this.cacheKey,
     };
-  }
-
-  private addToHeaderCache(): boolean {
-    if (!CacheSerializer.serializable(this.cprops)) return false;
-
-    const key = CacheManager.createHeaderCacheKey(this.cpath, this.cname);
-    if (!CacheManager._header_cache.has(key)) {
-      CacheManager._header_cache.set(key, new Set());
-    }
-
-    const value = CacheManager.transformPropsToDeterministicString(this.cprops);
-    CacheManager._header_cache.get(key)!.add(value);
-    return true;
   }
 }

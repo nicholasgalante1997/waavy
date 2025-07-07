@@ -1,3 +1,4 @@
+// @no-test
 import {
   ComponentNotFoundError,
   ErrorCodes,

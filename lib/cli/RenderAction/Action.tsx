@@ -47,40 +47,39 @@ const renderAction: RenderAction = async (pathToComponent, options, wm) => {
     validateComponentExtension(pathToComponent);
 
     const props = await getComponentProps(pathToComponent, options);
-    /** TODO 
-     * we need to init CacheManager with existing cache data when a process is spawned 
-     * otherwise hasCached will always end up being falsy
-     * */
-    const hasCached = CacheManager.isInCache(pathToComponent, name, props);
 
-    if (cache && cacheKey && cacheType && hasCached) {
-      const cm = new CacheManager({
-        key: cacheKey,
-        type: cacheType,
-        component: {
-          name,
-          path: pathToComponent,
-          props,
-        },
-      });
-      const ce = await cm.find();
-      if (ce) {
-        const { cachedRenderOutput } = ce;
-        switch (strategy) {
-          case OutputStrategy.StdoutStream:
-          case OutputStrategy.StdoutString:
-            !process.stdout.write(cachedRenderOutput) &&
-              process.stdout.emit("drain");
-            return;
-          case OutputStrategy.SerializedJson:
-            !process.stdout.write(
-              JSON.stringify({
-                html: cacheableRenderOutput,
-                exitCode: 0,
-                props,
-              }),
-            );
-            return;
+    if (cache && cacheKey && cacheType) {
+      const hasCached = CacheManager.isInCache(pathToComponent, name, props);
+
+      if (hasCached) {
+        const cm = new CacheManager({
+          key: cacheKey,
+          type: cacheType,
+          component: {
+            name,
+            path: pathToComponent,
+            props,
+          },
+        });
+        const ce = await cm.find();
+        if (ce) {
+          const { cachedRenderOutput } = ce;
+          switch (strategy) {
+            case OutputStrategy.StdoutStream:
+            case OutputStrategy.StdoutString:
+              !process.stdout.write(cachedRenderOutput) &&
+                process.stdout.emit("drain");
+              return;
+            case OutputStrategy.SerializedJson:
+              !process.stdout.write(
+                JSON.stringify({
+                  html: cacheableRenderOutput,
+                  exitCode: 0,
+                  props,
+                }),
+              );
+              return;
+          }
         }
       }
     }
@@ -239,6 +238,15 @@ const renderAction: RenderAction = async (pathToComponent, options, wm) => {
       try {
         clearTimeout(timeout);
       } catch (_) {}
+    }
+
+    if (strategy !== OutputStrategy.NamedPipe) {
+      /**
+       * Flush stdout
+       */
+      if (process.stdout.writableNeedDrain) {
+        process.stdout.emit("drain");
+      }
     }
   }
 };

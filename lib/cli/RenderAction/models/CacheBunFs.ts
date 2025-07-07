@@ -82,9 +82,9 @@ export default class CacheBunFs implements IRenderCache {
 
       /**
        * TODO
-       * 
+       *
        * We can randomize file names if we can use metadata.json to link to each
-       * 
+       *
        */
 
       const metadataFilePath = path.resolve(
