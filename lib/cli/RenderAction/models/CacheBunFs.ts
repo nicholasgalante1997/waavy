@@ -102,7 +102,7 @@ export default class CacheBunFs implements IRenderCache {
 
       const metadata: CacheEntryMetadata = {
         id: this.ce.id,
-        createdAt: this.ce.createdAt,
+        createdAt: this.ce.createdAt || new Date(),
         cname: this.ce.cname,
         cpath: this.ce.cpath,
         cachedRenderOutputFile: renderOutputFilePath,

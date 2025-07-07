@@ -1,10 +1,6 @@
-import React from "react";
-import { type SerializableObject } from "./types";
-import { WorkerEvents } from "./workers";
-
-declare var self: Worker;
-
 /**
+ * SECTION OVERVIEW
+ *
  * Workers in Bun are not production ready yet,
  * @see https://bun.sh/docs/api/workers
  *
@@ -40,13 +36,40 @@ declare var self: Worker;
  * - loading a file, loading a component, loading props, rendering a component with the ReactDOMServer engine
  *
  * We need only do this once.
+ *
+ * !SECTION
  */
+
+import React from "react";
+import CacheManager from "./cli/RenderAction/models/CacheManager";
+import {
+  WorkerMessageDataAction,
+  type CacheRenderOutputMessagePayload,
+  type CacheRenderOutputOptions,
+  type WorkerMessageData,
+} from "./types/worker";
+import { WorkerEvents } from "./workers";
+import type { SerializableObject } from "./types";
+
+declare var self: Worker;
 
 self.onmessage = async (message) => {
   const { data, type } = message;
-  const action = data?.action;
+  const action = (data as WorkerMessageData).action;
+  const payload = (data as WorkerMessageData<CacheRenderOutputMessagePayload>)
+    .payload;
   switch (action) {
-    case "cache": {
+    case WorkerMessageDataAction.Cache: {
+      await cacheRenderOutput({
+        cacheKey: payload.cacheKey,
+        cacheType: payload.cacheType!,
+        component: {
+          cacheableRenderOutput: payload.cachedRenderOutput,
+          name: payload.cname,
+          path: payload.cpath,
+          props: payload.props,
+        },
+      });
       break;
     }
     default: {
@@ -57,11 +80,21 @@ self.onmessage = async (message) => {
   postMessage({ type: WorkerEvents.Destroy });
 };
 
-type CreateRenderOutputCacheEntry = {
-  pathToComponent: string;
-  componentName: string;
-  props: SerializableObject;
-  cacheStrategy?: "bunfs" | "sqlite3";
-};
-
-async function cacheRenderOutput() {}
+async function cacheRenderOutput<
+  Props extends SerializableObject = SerializableObject,
+>(options: CacheRenderOutputOptions<Props>) {
+  const cm = new CacheManager({
+    key: options.cacheKey,
+    type: options.cacheType,
+    component: {
+      name: options.component.name,
+      path: options.component.path,
+      props: options.component.props,
+    },
+  });
+  try {
+    await cm.cache(options.component.cacheableRenderOutput);
+  } catch (e) {
+    /** Swallow error */
+  }
+}

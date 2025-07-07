@@ -14,7 +14,7 @@ type ListProps = {
 const List = (props: ListProps) => (
   <ul>
     {props.items.map((item) => (
-      <Item {...item} />
+      <Item key={JSON.stringify(item)} {...item} />
     ))}
   </ul>
 );

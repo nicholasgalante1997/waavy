@@ -1,3 +1,9 @@
+import type { SerializableObject } from "./types";
+import type {
+  WorkerMessageData,
+  WorkerMessageDataAction,
+} from "./types/worker";
+
 export enum WorkerEvents {
   Destroy = "destroy",
 }
@@ -37,6 +43,16 @@ class Workers {
       }
     };
   }
+}
+
+export function createWorkerMessageData<T = SerializableObject>(
+  action: WorkerMessageDataAction,
+  payload: T,
+): WorkerMessageData<T> {
+  return {
+    action,
+    payload,
+  };
 }
 
 export default Workers;

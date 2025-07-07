@@ -11,7 +11,7 @@ export type ComponentName = "default" | string;
 export type ComponentRepresentation = [ComponentPath, ComponentName];
 
 export type CacheEntry = {
-  createdAt: string | Date;
+  createdAt?: string | Date;
   id: string;
   props: string;
   cpath: string;

@@ -7,6 +7,12 @@ import {
 } from "@/server";
 import defaultErrorPage from "@/templates/waavy-error-page";
 import type { RenderAction } from "@/types";
+import {
+  WorkerMessageDataAction,
+  type CacheRenderOutputMessagePayload,
+} from "@/types/worker";
+import { createWorkerMessageData } from "@/workers";
+
 import CacheManager from "./models/CacheManager";
 import {
   createRenderOptions,
@@ -21,8 +27,6 @@ import {
 } from "./utils";
 
 const renderAction: RenderAction = async (pathToComponent, options, wm) => {
-  const strategy = getOutputStrategy(options);
-
   const {
     await: _await = false,
     bootstrap,
@@ -37,6 +41,7 @@ const renderAction: RenderAction = async (pathToComponent, options, wm) => {
     verbose = false,
   } = options;
 
+  const strategy = getOutputStrategy(options);
   let cacheableRenderOutput: string | null = null;
   let errorPage = defaultErrorPage;
   let signal,
@@ -215,19 +220,20 @@ const renderAction: RenderAction = async (pathToComponent, options, wm) => {
       }
     }
 
-    if (cache && cacheableRenderOutput && cacheType && cacheKey) {
-      const cm = new CacheManager({
-        key: cacheKey,
-        type: cacheType,
-        component: {
-          name,
+    if (cache && cacheType && cacheKey && cacheableRenderOutput) {
+      const worker = wm.createWorker();
+      const message = createWorkerMessageData<CacheRenderOutputMessagePayload>(
+        WorkerMessageDataAction.Cache,
+        {
+          cachedRenderOutput: cacheableRenderOutput,
+          cacheKey,
+          cacheType,
+          cname: name,
+          cpath: pathToComponent,
           props,
-          path: pathToComponent,
         },
-      });
-      try {
-        await cm.cache(cacheableRenderOutput);
-      } catch (e) {}
+      );
+      worker.postMessage(message);
     }
 
     return;
