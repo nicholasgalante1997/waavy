@@ -48,14 +48,15 @@
   "scripts": {
     "postinstall": "node post-install.js",
     "clean": "rm -rf out",
-    "format": "prettier --write lib",
+    "format": "prettier --write lib scripts bin build.ts config.ts",
     "lint": "eslint lib",
     "check-types": "tsc -p tsconfig.json",
-    "bundle": "DEBUG=waavy:* bun run build.ts --all --verbose",
+    "bundle": "NODE_ENV=production DEBUG=waavy:* bun run build.ts --all --verbose",
     "bundle:verbose": "bun run bundle -- --verbose",
     "bundle:all": "bun run bundle -- --all",
     "prebuild": "run-s clean test",
     "build": "run-s check-types bundle",
+    "postbuild": "DEBUG=* bun run scripts/gzip-binaries.ts",
     "test": "bun test",
     "docs:serve": "docsify serve ./docs --open --port=4040"
   },
@@ -76,7 +77,8 @@
     "commander": "^14.0.0",
     "debug": "^4.4.1",
     "dotenv": "^16.5.0",
-    "printf": "^0.6.1"
+    "printf": "^0.6.1",
+    "undici": "^7.11.0"
   },
   "peerDependencies": {
     "react": "^19.0.0",
