@@ -73,8 +73,11 @@ export default class RenderCacheHeaderDatabase {
     }
   }
 
-  find(cacheable: CacheEntryHeader) {
+  find(cacheable: Partial<CacheEntryHeader>): CacheEntryHeader | null {
     try {
+      if (!cacheable.cname || !cacheable.cpath || !cacheable.props) {
+        return null;
+      }
       if (!CacheSerializer.serializable(cacheable.props)) return null;
       const sql = this.getReadSql();
       const strprops = JSON.stringify(

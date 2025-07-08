@@ -20,7 +20,7 @@ export default class CacheBunSqlite3 implements IRenderCache {
 
   private getInsertSql = () =>
     this.db.prepare(`
-        INSERT OR REPLACE INTO render_cache (id, props, render_output, cpath, cname)
+        INSERT OR REPLACE INTO render_cache (id, props, render_output, component_path, component_name)
         VALUES (?, ?, ?, ?, ?)
     `);
 
@@ -30,6 +30,9 @@ export default class CacheBunSqlite3 implements IRenderCache {
         SELECT id, props, render_output, created_at 
         FROM render_cache 
         WHERE props = ?
+        AND component_path = ?
+        AND component_name = ?
+        LIMIT 1
     `,
     );
 
@@ -37,16 +40,24 @@ export default class CacheBunSqlite3 implements IRenderCache {
    * @see https://github.com/tc39/proposal-explicit-resource-management
    */
   [Symbol.dispose](): void {
-    const sdb = this.db.serialize();
+    this.db.close(false);
+  }
+
+  /**
+   * TODO determine if we need to serialize the db
+   * on every db close
+   * or if we can just create once and use across processes
+   */
+  private serializeDB() {
     try {
       /**
        * Serialize the db to a cache file so
        * it can be used across spawned waavy processes
        * */
+      const sdb = this.db.serialize();
       fs.rmSync(DEFAULT_WAAVY_RENDER_DB_CACHE, { force: true });
       fs.writeFileSync(DEFAULT_WAAVY_RENDER_DB_CACHE, sdb);
     } catch (e) {}
-    this.db.close(false);
   }
 
   constructor(ce: CacheEntry) {
@@ -72,8 +83,8 @@ export default class CacheBunSqlite3 implements IRenderCache {
         id TEXT PRIMARY KEY,
         props BLOB NOT NULL,
         render_output BLOB NOT NULL,
-        cname TEXT NOT NULL,
-        cpath TEXT NOT NULL,
+        component_name TEXT NOT NULL,
+        component_path TEXT NOT NULL,
         created_at INTEGER DEFAULT (strftime('%s', 'now'))
       )
     `);
@@ -89,7 +100,7 @@ export default class CacheBunSqlite3 implements IRenderCache {
     try {
       const sql = this.getSelectSql();
       const _props = await this.encryptAndSerializeProps();
-      const match = sql.get(sabtou8ab(_props));
+      const match = sql.get(sabtou8ab(_props), this.ce.cpath, this.ce.cname);
       if (match) {
         const deserializedRenderOutput = await CacheEncryption.decrypt(
           CacheSerializer.deserialize((match as any).render_output),

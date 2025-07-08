@@ -5,7 +5,6 @@ import type {
   CacheEntryWithRenderOutput,
 } from "../utils/cache/types";
 
-import CacheEncryption from "./CacheEncryption";
 import CacheSerializer from "./CacheSerializer";
 import CacheBunFs from "./CacheBunFs";
 import CacheBunSqlite3 from "./CacheSqlite3";
@@ -27,7 +26,6 @@ export default class CacheManager {
   private static _hcache_db: RenderCacheHeaderDatabase =
     new RenderCacheHeaderDatabase();
 
-  private id: string;
   private type: CacheType;
   private cpath: string;
   private cname: string;
@@ -52,13 +50,8 @@ export default class CacheManager {
         cname: cname,
         cpath: cpath,
         props: props,
-        id: CacheManager.createHeaderCacheKey(cpath, cname),
       }),
     );
-  }
-
-  private static createHeaderCacheKey(cpath: string, cname: string) {
-    return CacheEncryption.sha256Hash(cpath.concat("::", cname));
   }
 
   private static addToHeaderCache(
@@ -71,7 +64,7 @@ export default class CacheManager {
         cname,
         cpath,
         props,
-        id: CacheManager.createHeaderCacheKey(cpath, cname),
+        id: Bun.randomUUIDv7("hex", new Date()),
       });
     } catch (e) {
       return false;
@@ -79,7 +72,6 @@ export default class CacheManager {
   }
 
   constructor(options: CacheManagerConstructorOptions) {
-    this.id = Bun.randomUUIDv7();
     this.type = options.type;
     this.cacheKey = options.key;
     this.cname = options.component.name;

@@ -54,7 +54,7 @@ import type { SerializableObject } from "./types";
 declare var self: Worker;
 
 self.onmessage = async (message) => {
-  const { data, type } = message;
+  const { data } = message;
   const action = (data as WorkerMessageData).action;
   const payload = (data as WorkerMessageData<CacheRenderOutputMessagePayload>)
     .payload;
