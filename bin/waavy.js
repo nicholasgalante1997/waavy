@@ -35,14 +35,19 @@ if (
 }
 
 const binaryName =
-  "waavy-" + platform + "-" + ((arch === "x64" && platform === "linux")
+  "waavy-" +
+  platform +
+  "-" +
+  (arch === "x64" && platform === "linux"
     ? "x64-modern"
     : arch + (platform === "win32" ? ".exe" : ""));
 
 const binaryPath = path.join(__dirname, binaryName);
 
 if (!fs.existsSync(binaryPath)) {
-  console.error("Binary not found. Try reinstalling the package. \n" + binaryPath);
+  console.error(
+    "Binary not found. Try reinstalling the package. \n" + binaryPath,
+  );
   process.exit(1);
 }
 

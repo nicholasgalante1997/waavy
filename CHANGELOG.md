@@ -21,6 +21,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+## [0.1.6] 07/08/2025
+
+### Added 
+
+- Implements render caching with `--cache` flag. Introduces dependency on Sqlite3 for `CacheManagerHeaderCache` internal database management.
+- Adds `--cache-key` for secure encryption of cached render output
+- Adds `--cache-type`, options: bunfs, bunsqlite3
+- Adds gzip compression for built executables
+- Adds pipeline decompression to `post-install.js`
+- Error page fallback implementation for opt-out pattern if an error is thrown during render
+
+### Fixed
+
+### Removed
+
+- `prehydrate` command
+
+### Deprecated
+
+### Security
+
 ## [0.1.5] 06/15/2025
 
 ### Added

@@ -1,3 +1,5 @@
+export * from "./cli";
+
 export type RenderOptions = {
   /**
    * If your application uses react-query, you can opt into server side rendering (prefetching) all your react-query queries here
@@ -60,4 +62,31 @@ export type RenderOptions = {
       queryFn: string | { path: string; module: string };
     }[];
   };
+};
+
+// Exclude functions, undefined, symbols, and other non-serializable values
+export type SerializableValue =
+  | string
+  | number
+  | boolean
+  | null
+  | SerializableObject
+  | SerializableArray;
+
+export interface SerializableObject {
+  [key: string]: SerializableValue;
+}
+
+export interface SerializableArray extends Array<SerializableValue> {}
+
+export type Serializable<T> = {
+  [K in keyof T]: T[K] extends Function
+    ? never
+    : T[K] extends undefined
+      ? never
+      : T[K] extends symbol
+        ? never
+        : T[K] extends object
+          ? Serializable<T[K]>
+          : T[K];
 };
