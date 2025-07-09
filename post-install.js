@@ -102,7 +102,7 @@ async function downloadBinary() {
     console.log(`🚀 waavy binary installed successfully!`);
   } catch (error) {
     console.error("❌ Download failed:", error.message);
-    process.exit(1);
+    throw error;
   }
 }
 
@@ -134,7 +134,6 @@ async function downloadAndDecompressFile(url, binaryPath, maxRedirects = 5) {
     let downloadedSize = 0;
     let lastProgress = 0;
     const startTime = Date.now();
-
 
     // Create gunzip stream
     const gunzip = createGunzip();
@@ -180,10 +179,6 @@ async function downloadAndDecompressFile(url, binaryPath, maxRedirects = 5) {
 
       console.log(`\nDownload and decompression completed: ${binaryPath}`);
     } catch (error) {
-      // Clean up on error
-      if (fs.existsSync(tempGzPath)) {
-        fs.rmSync(tempGzPath, { force: true });
-      }
       if (fs.existsSync(binaryPath)) {
         fs.rmSync(binaryPath, { force: true });
       }

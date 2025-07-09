@@ -20,4 +20,8 @@ time ./out/waavy-linux-x64-modern render ./lib/__tests__/components/Extended.tsx
 echo "##### <render/linux/sh -- WithLoader Typescript Cache Bun SQLite3> #####" && \
 time ./out/waavy-linux-x64-modern render ./lib/__tests__/components/Extended.tsx --props "{\"items\": [\"One\", \"Two\", \"Three\"]}" --cache --cache-type bunfs --cache-key password && \
 echo "##### <render/linux/sh -- WithLoader Typescript Cache BunFs> #####" && \
+time ./out/waavy-linux-x64-modern render ./lib/__tests__/components/Extended.tsx --props "{\"items\": [\"One\", \"Two\", \"Three\"]}" --cache --cache-type bunsqlite3 --cache-key password && \
+echo "##### <render/linux/sh -- WithLoader Typescript Cache Bun SQLite3> #####" && \
+time ./out/waavy-linux-x64-modern render ./lib/__tests__/components/Extended.tsx --props "{\"items\": [\"One\", \"Two\", \"Three\"]}" --cache --cache-type bunfs --cache-key password && \
+echo "##### <render/linux/sh -- WithLoader Typescript Cache BunFs> #####" && \
 exit 0;
