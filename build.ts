@@ -4,32 +4,16 @@ import { mkdir } from "fs/promises";
 import path from "path";
 import util from "util";
 
+import config from "./config";
 import Package from "./package.json";
 
 const log = debug("waavy:build");
 const outdir = path.join(process.cwd(), "out");
 const external = Object.keys(Package.peerDependencies);
-
-const sources = {
-  cli: {
-    main: "lib/cli.tsx",
-    worker: "lib/_worker.tsx",
-  },
-  exports: {
-    server: "lib/exports/server.ts",
-    browser: "lib/exports/browser.ts",
-  },
-};
-
-const defaultBuildOptions: Partial<Bun.BuildConfig> = {
-  external,
-  outdir,
-  minify: true,
-  sourcemap: "linked" as const,
-  splitting: false,
-  root: "./lib",
-  packages: "bundle" as const,
-};
+const sources = config.build.sources;
+const targets = config.build.targets;
+const defaultBuildOptions: Partial<Bun.BuildConfig> =
+  config.build.defaultBuildOptions(external, outdir);
 
 type Options = {
   js?: boolean;
@@ -39,44 +23,6 @@ type Options = {
   verbose?: boolean;
   help?: boolean;
 };
-
-const targets = [
-  {
-    name: "waavy-linux-x64-modern",
-    target: "bun-linux-x64-modern",
-    platform: "Linux x64 (modern)",
-  },
-  {
-    name: "waavy-linux-x64-baseline",
-    target: "bun-linux-x64-baseline",
-    platform: "Linux x64 (baseline)",
-  },
-  {
-    name: "waavy-macos-x64",
-    target: "bun-darwin-x64",
-    platform: "macOS x64",
-  },
-  {
-    name: "waavy-macos-arm64",
-    target: "bun-darwin-arm64",
-    platform: "macOS ARM64",
-  },
-  {
-    name: "waavy-linux-arm64",
-    target: "bun-linux-arm64",
-    platform: "Linux ARM64",
-  },
-  {
-    name: "waavy-windows-x64-modern",
-    target: "bun-windows-x64-modern",
-    platform: "Windows x64 (modern)",
-  },
-  {
-    name: "waavy-windows-x64-baseline",
-    target: "bun-windows-x64-baseline",
-    platform: "Windows x64 (baseline)",
-  },
-];
 
 program.addHelpText(
   "before",
@@ -100,7 +46,7 @@ Examples:
   bun run build.ts --executables      # Executables only
   bun run build.ts --target=linux     # Linux targets only
   bun run build.ts --target=macos-arm64 --verbose  # Specific target with verbose logging
-`
+`,
 );
 
 program
@@ -120,7 +66,7 @@ async function ensureOutDir() {
     log.extend("debug")(`Created output directory: ${outdir}`);
   } catch (error) {
     log.extend("warn")(
-      `Output directory already exists or couldn't be created: ${error}`
+      `Output directory already exists or couldn't be created: ${error}`,
     );
   }
 }
@@ -153,7 +99,7 @@ async function buildSources(verbose = false) {
 
 async function buildExecutable(
   targetConfig: (typeof targets)[0],
-  verbose = false
+  verbose = false,
 ) {
   const startTime = performance.now();
   const outfile = path.join(outdir, targetConfig.name);
@@ -193,14 +139,14 @@ async function buildExecutable(
         const stat = Bun.file(outfile).size;
         const sizeInMB = (stat / (1024 * 1024)).toFixed(1);
         log(
-          `${targetConfig.platform} executable built in ${duration}ms (${sizeInMB}MB)`
+          `${targetConfig.platform} executable built in ${duration}ms (${sizeInMB}MB)`,
         );
       } catch {
         log(`${targetConfig.platform} executable built in ${duration}ms`);
       }
     } else {
       log.extend("error")(
-        `Failed to build ${targetConfig.platform} executable (exit code: ${exitCode})`
+        `Failed to build ${targetConfig.platform} executable (exit code: ${exitCode})`,
       );
       const stderr = await new Response(proc.stderr).text();
       if (stderr) console.error(stderr);
@@ -208,7 +154,7 @@ async function buildExecutable(
     }
   } catch (error) {
     log.extend("error")(
-      `Failed to build ${targetConfig.platform} executable: ${error}`
+      `Failed to build ${targetConfig.platform} executable: ${error}`,
     );
     return false;
   }
@@ -220,7 +166,7 @@ async function buildExecutables(specificTarget?: string, verbose = false) {
   const matches = specificTarget
     ? targets.filter(
         (t) =>
-          t.name.includes(specificTarget) || t.target.includes(specificTarget)
+          t.name.includes(specificTarget) || t.target.includes(specificTarget),
       )
     : targets;
 
@@ -231,7 +177,7 @@ async function buildExecutables(specificTarget?: string, verbose = false) {
 
   if (specificTarget) {
     log(
-      `Building specific target(s): ${targets.map((t) => t.platform).join(", ")}`
+      `Building specific target(s): ${targets.map((t) => t.platform).join(", ")}`,
     );
   }
 
@@ -247,9 +193,31 @@ async function buildExecutables(specificTarget?: string, verbose = false) {
     return true;
   } else {
     log.extend("error")(
-      `${targets.length - successCount}/${targets.length} executable builds failed`
+      `${targets.length - successCount}/${targets.length} executable builds failed`,
     );
     return false;
+  }
+}
+
+function handleBunBuildOutput(
+  output: Awaited<ReturnType<typeof Bun.build>>,
+  startTime?: number,
+  verbose = false,
+) {
+  if (output.success) {
+    const duration = Math.round(performance.now() - (startTime || 0));
+    log(`JavaScript bundle built in ${duration}ms`);
+    if (verbose) {
+      output.outputs.forEach((output) => {
+        log.extend("debug")(
+          `Generated: ${output.path} (${Math.round(output.size / 1024)}KB)`,
+        );
+      });
+    }
+  } else {
+    log.extend("error")("JavaScript build failed:");
+    output.logs.forEach((buildLog) => console.error(buildLog));
+    throw new Error("JavaScript build failed");
   }
 }
 
@@ -291,27 +259,5 @@ async function build(options: Options) {
   } else {
     log.extend("error")(`💥 Build failed after ${totalDuration}ms`);
     process.exit(1);
-  }
-}
-
-function handleBunBuildOutput(
-  output: Awaited<ReturnType<typeof Bun.build>>,
-  startTime?: number,
-  verbose = false
-) {
-  if (output.success) {
-    const duration = Math.round(performance.now() - (startTime || 0));
-    log(`JavaScript bundle built in ${duration}ms`);
-    if (verbose) {
-      output.outputs.forEach((output) => {
-        log.extend("debug")(
-          `Generated: ${output.path} (${Math.round(output.size / 1024)}KB)`
-        );
-      });
-    }
-  } else {
-    log.extend("error")("JavaScript build failed:");
-    output.logs.forEach((buildLog) => console.error(buildLog));
-    throw new Error("JavaScript build failed");
   }
 }

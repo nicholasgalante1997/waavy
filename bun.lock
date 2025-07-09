@@ -8,6 +8,7 @@
         "debug": "^4.4.1",
         "dotenv": "^16.5.0",
         "printf": "^0.6.1",
+        "undici": "^7.11.0",
       },
       "devDependencies": {
         "@changesets/cli": "^2.27.10",
@@ -26,9 +27,11 @@
         "prettier": "^3.3.3",
         "react": "^19.0.0",
         "react-dom": "^19.0.0",
-        "supports-color": "^10.0.0",
         "typescript": "^5.7.2",
         "typescript-eslint": "^8.16.0",
+      },
+      "optionalDependencies": {
+        "supports-color": "^10.0.0",
       },
       "peerDependencies": {
         "@tanstack/react-query": "^5.62.3",
@@ -872,6 +875,8 @@
     "typescript-eslint": ["typescript-eslint@8.33.1", "", { "dependencies": { "@typescript-eslint/eslint-plugin": "8.33.1", "@typescript-eslint/parser": "8.33.1", "@typescript-eslint/utils": "8.33.1" }, "peerDependencies": { "eslint": "^8.57.0 || ^9.0.0", "typescript": ">=4.8.4 <5.9.0" } }, "sha512-AgRnV4sKkWOiZ0Kjbnf5ytTJXMUZQ0qhSVdQtDNYLPLnjsATEYhaO94GlRQwi4t4gO8FfjM6NnikHeKjUm8D7A=="],
 
     "unbox-primitive": ["unbox-primitive@1.1.0", "", { "dependencies": { "call-bound": "^1.0.3", "has-bigints": "^1.0.2", "has-symbols": "^1.1.0", "which-boxed-primitive": "^1.1.1" } }, "sha512-nWJ91DjeOkej/TA8pXQ3myruKpKEYgqvpw9lz4OPHj/NWFNluYrjbz9j01CJ8yKQd2g4jFoOkINCTW2I5LEEyw=="],
+
+    "undici": ["undici@7.11.0", "", {}, "sha512-heTSIac3iLhsmZhUCjyS3JQEkZELateufzZuBaVM5RHXdSBMb1LPMQf5x+FH7qjsZYDP0ttAc3nnVpUB+wYbOg=="],
 
     "undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
 
