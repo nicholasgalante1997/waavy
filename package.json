@@ -1,7 +1,7 @@
 {
   "name": "waavy",
   "description": "A library to support rendering React components like in any server environment, not just javascript runtimes.",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "type": "module",
   "bin": {
     "waavy": "bin/waavy.js"
