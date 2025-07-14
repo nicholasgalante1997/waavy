@@ -59,11 +59,11 @@ jobs:
           WAAVY_CLI_COMMAND_INCLUDE_SSG: ${{ secrets.WAAVY_CLI_COMMAND_INCLUDE_SSG }}
           WAAVY_CLI_COMMAND_INCLUDE_UPGRADE: ${{ secrets.WAAVY_CLI_COMMAND_INCLUDE_UPGRADE }}
         continue-on-error: true
+      - name: Make linux render shell script executable
+        run: chmod +x ./test/commands/render.linux.sh
+
       - name: Run shell scripts
-        run: |
-          chmod +x ./test/commands/render.linux.sh;
-          ./test/commands/render.linux.sh
-        continue-on-error: false
+        run: ./test/commands/render.linux.sh
   summary:
     name: Pipeline Summary
     needs:
