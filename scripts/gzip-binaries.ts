@@ -10,19 +10,21 @@ const log = debug("waavy:compress:gzip");
 const outdir = path.join(process.cwd(), "out");
 
 const executables = config.build.targets.map((t) =>
-  path.resolve(outdir, t.name)
+  path.resolve(outdir, t.name),
 );
 
 async function compress() {
   await Promise.all(
     executables.map(async function (executable) {
       const gzip = createGzip({ level: 9, memLevel: 9 });
-      const filepath = executable.includes("windows") ? executable + ".exe" : executable;
+      const filepath = executable.includes("windows")
+        ? executable + ".exe"
+        : executable;
       const gzipPath = `${filepath}.gz`;
       const input = createReadStream(filepath);
       const output = createWriteStream(gzipPath);
       return await pipeline(input, gzip, output);
-    })
+    }),
   );
 }
 
@@ -32,8 +34,8 @@ compress()
   .then(() =>
     log(
       "Compression completed successfully in %d ms",
-      Math.round(performance.now() - start)
-    )
+      Math.round(performance.now() - start),
+    ),
   )
   .catch((error) => {
     const err = log.extend("error");

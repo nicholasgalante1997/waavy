@@ -1,0 +1,1 @@
+export { setupUpgradeAction } from "./setup";

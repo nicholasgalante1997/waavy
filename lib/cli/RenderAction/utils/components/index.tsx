@@ -101,9 +101,13 @@ export function getPropsFromOptions(
   options: RenderActionOptions,
 ): Record<string, unknown> {
   options.props ||= {};
-  return typeof options?.props === "string"
-    ? JSON.parse(options?.props)
-    : options.props;
+  try {
+    return typeof options?.props === "string"
+      ? JSON.parse(options?.props)
+      : options.props;
+  } catch (e) {
+    return {};
+  }
 }
 
 export function getWaavyRenderContext(request?: Partial<Request>) {

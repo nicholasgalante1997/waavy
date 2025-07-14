@@ -1,8 +1,10 @@
 import type { Command } from "commander";
 import type Workers from "@/workers";
+import ActionUtils from "../utils";
 import renderAction from "./Action";
 
 export function setupRenderAction(program: Command) {
+  if (!ActionUtils.shouldInclude("render")) return;
   program
     .command("render")
     .description(

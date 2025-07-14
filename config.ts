@@ -2,7 +2,7 @@ export default {
   build: {
     sources: {
       cli: {
-        main: "lib/cli.tsx",
+        main: "lib/index.ts",
         worker: "lib/_worker.tsx",
       },
       exports: {
