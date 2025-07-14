@@ -1,12 +1,13 @@
-import React from "react";
-import * as ReactDOMServer from "react-dom/server";
 import type { WriteStream } from "fs";
 import { Readable } from "stream";
+import PeerDependencyManager from "@/utils/models/PeerDependencyManager";
 
-export function transformComponentToString(
+export async function transformComponentToString(
   component: React.ReactElement,
   options: ReactDOMServer.ServerOptions = {},
 ) {
+  const React = await PeerDependencyManager.useReact();
+  const ReactDOMServer = await PeerDependencyManager.useReactDOMServer();
   return ReactDOMServer.renderToString(component, options);
 }
 
@@ -14,6 +15,8 @@ export async function transformComponentToReadableStream(
   component: React.ReactElement,
   options: ReactDOMServer.RenderToReadableStreamOptions = {},
 ) {
+  const React = await PeerDependencyManager.useReact();
+  const ReactDOMServer = await PeerDependencyManager.useReactDOMServer();
   return ReactDOMServer.renderToReadableStream(component, options);
 }
 

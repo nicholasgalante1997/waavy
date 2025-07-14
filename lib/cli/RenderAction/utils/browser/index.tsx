@@ -1,4 +1,3 @@
-import React from "react";
 import type { RenderToReadableStreamOptions } from "react-dom/server";
 import {
   DEFAULT_WAAVY_HYDRATION_SELECTOR,
@@ -35,18 +34,16 @@ export function createRenderOptions({
   const renderOptions: RenderToReadableStreamOptions = {
     bootstrapModules: bootstrap,
     bootstrapScriptContent: waavyScriptContent,
-    onError(error, errorInfo) {
-      if (raOptions?.verbose) {
-        logger.extend("error")(
-          "An error was thrown during server side rendering",
-        );
-      }
-
-      if (ErrorComponent) {
-        try {
-          errorPage = getErrorPageMarkup(ErrorComponent, error, errorInfo);
-        } catch (e) {}
-      }
+    onError: (error, errorInfo) => {
+      // if (ErrorComponent) {
+      //   try {
+      //     errorPage = await getErrorPageMarkup(
+      //       ErrorComponent,
+      //       error,
+      //       errorInfo,
+      //     );
+      //   } catch (e) {}
+      // }
     },
     progressiveChunkSize: asOptionalNumber(raOptions?.chunk),
   };

@@ -1,4 +1,4 @@
-import React from "react";
+import type { ComponentType } from "react";
 import path from "path";
 import { transformComponentToString } from "@/server";
 import type { RenderActionOptions } from "@/types";
@@ -10,7 +10,7 @@ type ErrorPageConfiguration = {
 };
 
 export function getErrorPageMarkup(
-  ErrorComponent: React.ComponentType<any>,
+  ErrorComponent: ComponentType<any>,
   error: unknown,
   errorInfo?: unknown,
 ) {
@@ -31,7 +31,7 @@ export async function getErrorComponentOrNull(
   errorComponentPath?: string,
   errorComponentName?: string,
   options?: RenderActionOptions,
-): Promise<React.ComponentType<{ error: unknown }> | null> {
+): Promise<ComponentType<{ error: unknown }> | null> {
   let ErrorComponent = null;
   if (errorComponentPath) {
     try {
@@ -50,5 +50,5 @@ export async function getErrorComponentOrNull(
     }
   }
 
-  return ErrorComponent as React.ComponentType<{ error: unknown }> | null;
+  return ErrorComponent as ComponentType<{ error: unknown }> | null;
 }

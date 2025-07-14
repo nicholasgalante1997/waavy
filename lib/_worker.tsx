@@ -40,7 +40,6 @@
  * !SECTION
  */
 
-import React from "react";
 import CacheManager from "./cli/RenderAction/models/CacheManager";
 import {
   WorkerMessageDataAction,

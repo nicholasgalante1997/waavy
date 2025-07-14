@@ -2,6 +2,7 @@ import type { OutputStrategy } from "@/cli/RenderAction/utils";
 
 import ComponentNotFoundError from "./ComponentNotFound";
 import InvalidExtensionError from "./InvalidExtension";
+import MissingPeerDependencyError from "./MissingPeerDependency";
 import PropDataLoaderException from "./PropDataLoader";
 import UnserializableObjectError from "./UnserializableObjectError";
 
@@ -88,6 +89,7 @@ async function handleWriteErrorPageToStdErr(errorPage: string) {
 export {
   ComponentNotFoundError,
   InvalidExtensionError,
+  MissingPeerDependencyError,
   PropDataLoaderException,
   UnserializableObjectError,
 };

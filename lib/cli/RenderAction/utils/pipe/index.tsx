@@ -1,4 +1,4 @@
-import React from "react";
+import type { ComponentType, JSX } from "react";
 import type { RenderToReadableStreamOptions } from "react-dom/server";
 import fs from "fs";
 import path from "path";
@@ -12,10 +12,10 @@ import type { RenderActionOptions } from "@/types";
  * Streams the rendering of the component to the writer (file handle)
  */
 export async function pipeComponentToNamedPipe<
-  Props extends React.JSX.IntrinsicAttributes = Record<string, any>,
+  Props extends JSX.IntrinsicAttributes = Record<string, any>,
 >(
   options: RenderActionOptions,
-  Component: React.ComponentType,
+  Component: ComponentType,
   props: Props = {} as Props,
   renderToReadableStreamOptions: RenderToReadableStreamOptions = {},
 ) {

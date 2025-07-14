@@ -1,4 +1,5 @@
-import React from "react";
+import type { ComponentType } from "react";
+
 import path from "path";
 import {
   ComponentNotFoundError,
@@ -9,14 +10,6 @@ import { load, logger } from "@/utils";
 import type { LoaderFn, RenderActionOptions } from "@/types";
 
 export function validateComponentExtension(pathToComponent: string) {
-  /**
-   * Pre (Validation)
-   *
-   * Ensure we can load/parse the provided file.
-   *
-   * This function throws an InvalidExtensionError if the file to be loaded is not one of
-   * [js, jsx, ts, tsx]
-   */
   const extension = path.extname(pathToComponent).replace(".", "");
   if (!["js", "ts", "jsx", "tsx"].includes(extension)) {
     throw new InvalidExtensionError(
@@ -26,36 +19,21 @@ export function validateComponentExtension(pathToComponent: string) {
   }
 }
 
-export async function loadComponent(
+export async function loadComponent<Props = {}>(
   pathToComponent: string,
   name?: string,
-): Promise<React.ComponentType<any>> {
-  /**
-   * 1. Component Loading from Local Filesystem
-   */
+): Promise<ComponentType<Props>> {
   const Component = await load(pathToComponent, name);
   if (Component == null) {
     throw new ComponentNotFoundError(pathToComponent, name || "default");
   }
-  return Component as React.ComponentType<any>;
+  return Component as ComponentType<Props>;
 }
 
-/**
- * 2. Re-use provided path to load any potential Waavy module (loaders).
- */
-export async function getWaavyModules(
-  pathToFile: string,
-  options?: RenderActionOptions,
-) {
+export async function getWaavyModules(pathToFile: string) {
   const waavyFileModules = await load(pathToFile, "waavy");
-  if (waavyFileModules == null) {
-    /** Not using `waavy` exports pattern */
-    options?.verbose &&
-      logger.extend("warn")(
-        "%s is not using `waavy` exports modules.",
-        pathToFile,
-      );
 
+  if (waavyFileModules == null) {
     return null;
   }
 
@@ -66,37 +44,24 @@ export async function getComponentProps<Props extends {} = {}>(
   pathToComponent: string,
   options: RenderActionOptions,
 ) {
-  const waavyFileModules = await getWaavyModules(pathToComponent, options);
+  const waavyFileModules = await getWaavyModules(pathToComponent);
 
-  let props = getPropsFromOptions(options); /** Initial or default props */
-  const tprops =
-    structuredClone(
-      props,
-    ); /** Backup copy in case we corrupt props in the loader phase */
+  let props = getPropsFromOptions(options);
+  const tprops = structuredClone(props);
 
   try {
-    /** Try to fetch any per request props */
     props = await fetchLoaderProvProps(
       waavyFileModules,
       props,
       options.request,
     );
   } catch (e) {
-    options.verbose &&
-      logger.extend("error")(
-        e instanceof PropDataLoaderException ? e?.message : e,
-      );
-
-    /** Reassign to safe copy */
-    props = tprops;
+    return tprops as Props;
   }
 
   return props as Props;
 }
 
-/**
- * Loads props from options or sets props to the default value, an empty object.
- */
 export function getPropsFromOptions(
   options: RenderActionOptions,
 ): Record<string, unknown> {
@@ -111,7 +76,11 @@ export function getPropsFromOptions(
 }
 
 export function getWaavyRenderContext(request?: Partial<Request>) {
-  return {};
+  return {
+    path: request?.url ? new URL(request.url).pathname : null,
+    search: request?.url ? new URL(request.url).searchParams : null,
+    method: request?.method ?? null,
+  };
 }
 
 export async function fetchLoaderProvProps<Props extends {} = {}>(

@@ -3,6 +3,7 @@ import React from "react";
 import * as ReactDOMServer from "react-dom/server";
 import { Writable } from "stream";
 import type { WriteStream } from "fs";
+import PeerDependencyManager from "@/utils/models/PeerDependencyManager";
 import {
   transformComponentToString,
   transformComponentToReadableStream,
@@ -20,49 +21,64 @@ import {
 
 describe("<lib/server/index.tsx/*>", () => {
   describe("[module:transformComponentToString]", () => {
-    test("it should render simple component to string", () => {
+    test("it should render simple component to string", async () => {
       const component = React.createElement(SimpleComponent);
-      const result = transformComponentToString(component);
+      const result = await transformComponentToString(component);
       expect(typeof result).toBe("string");
       expect(result).toContain('<div id="test">Hello World</div>');
     });
 
-    test("it should render a component with props to string", () => {
+    test("it should render a component with props to string", async () => {
       const component = React.createElement(ComponentWithProps, {
         name: "John",
         age: 25,
       });
-      const result = transformComponentToString(component);
+      const result = await transformComponentToString(component);
       expect(result).toBe("<div>Hello John, age 25</div>");
       expect(result).toContain("Hello John, age 25");
     });
 
-    test("it should render nested components to string", () => {
+    test("it should render nested components to string", async () => {
       const component = React.createElement(NestedComponent);
-      const result = transformComponentToString(component);
+      const result = await transformComponentToString(component);
       expect(result).toContain('<div class="container">');
       expect(result).toContain("<h1>Title</h1>");
       expect(result).toContain("<p>Content</p>");
     });
 
-    test("it should handle empty component", () => {
+    test("it should handle empty component", async () => {
       const EmptyComponent = () => false;
       const component = React.createElement(EmptyComponent);
-      const result = transformComponentToString(component);
+      const result = await transformComponentToString(component);
       expect(result).toBe("");
     });
 
-    test("it should pass through server options", () => {
-      const renderToStringSpy = spyOn(ReactDOMServer, "renderToString");
-      renderToStringSpy.mockReturnValue("<div>test</div>");
+    test("it should pass through server options", async () => {
+      // Spy on the PeerDependencyManager instead of the imported ReactDOMServer
+      const mockReactDOMServer = {
+        renderToString: spyOn(ReactDOMServer, "renderToString").mockReturnValue(
+          "<div>test</div>",
+        ),
+      };
+      const peerDepSpy = spyOn(
+        PeerDependencyManager,
+        "useReactDOMServer",
+      ).mockResolvedValue(mockReactDOMServer as any);
+
       const component = React.createElement(SimpleComponent);
       const options = { identifierPrefix: "test-" };
-      transformComponentToString(component, options);
-      expect(renderToStringSpy).toHaveBeenCalledWith(component, options);
-      renderToStringSpy.mockRestore();
+      await transformComponentToString(component, options);
+
+      expect(mockReactDOMServer.renderToString).toHaveBeenCalledWith(
+        component,
+        options,
+      );
+
+      peerDepSpy.mockRestore();
+      mockReactDOMServer.renderToString.mockRestore();
     });
 
-    test("should handle component with fragments", () => {
+    test("should handle component with fragments", async () => {
       const FragmentComponent = () =>
         React.createElement(
           React.Fragment,
@@ -72,12 +88,13 @@ describe("<lib/server/index.tsx/*>", () => {
         );
 
       const component = React.createElement(FragmentComponent);
-      const result = transformComponentToString(component);
+      const result = await transformComponentToString(component);
 
       expect(result).toContain("<span>First</span>");
       expect(result).toContain("<span>Second</span>");
     });
   });
+
   describe("[module:transformComponentToReadableStream]", () => {
     test("it should return a ReadableStream", async () => {
       const component = React.createElement(SimpleComponent);
@@ -102,9 +119,17 @@ describe("<lib/server/index.tsx/*>", () => {
     });
 
     test("it should handle streaming options", async () => {
-      const renderStreamSpy = spyOn(ReactDOMServer, "renderToReadableStream");
       const mockStream = new ReadableStream();
-      renderStreamSpy.mockResolvedValue(mockStream as any);
+      const mockReactDOMServer = {
+        renderToReadableStream: spyOn(
+          ReactDOMServer,
+          "renderToReadableStream",
+        ).mockResolvedValue(mockStream as any),
+      };
+      const peerDepSpy = spyOn(
+        PeerDependencyManager,
+        "useReactDOMServer",
+      ).mockResolvedValue(mockReactDOMServer as any);
 
       const component = React.createElement(SimpleComponent);
       const options = {
@@ -117,10 +142,14 @@ describe("<lib/server/index.tsx/*>", () => {
         options,
       );
 
-      expect(renderStreamSpy).toHaveBeenCalledWith(component, options);
+      expect(mockReactDOMServer.renderToReadableStream).toHaveBeenCalledWith(
+        component,
+        options,
+      );
       expect(result).toBe(mockStream as any);
 
-      renderStreamSpy.mockRestore();
+      peerDepSpy.mockRestore();
+      mockReactDOMServer.renderToReadableStream.mockRestore();
     });
 
     test("it should handle large components", async () => {
@@ -141,6 +170,7 @@ describe("<lib/server/index.tsx/*>", () => {
       expect(firstChunk.value).toBeDefined();
     });
   });
+
   describe("[module:pipeComponent]", () => {
     test("it should pipe component to writable stream", async () => {
       const component = React.createElement(SimpleComponent);
@@ -173,12 +203,21 @@ describe("<lib/server/index.tsx/*>", () => {
     });
 
     test("it should pass options to stream creation", async () => {
-      const renderStreamSpy = spyOn(ReactDOMServer, "renderToReadableStream");
       const mockStream = new ReadableStream();
       const mockPipeTo = spyOn(mockStream, "pipeTo").mockResolvedValue(
         undefined,
       );
-      renderStreamSpy.mockResolvedValue(mockStream as any);
+
+      const mockReactDOMServer = {
+        renderToReadableStream: spyOn(
+          ReactDOMServer,
+          "renderToReadableStream",
+        ).mockResolvedValue(mockStream as any),
+      };
+      const peerDepSpy = spyOn(
+        PeerDependencyManager,
+        "useReactDOMServer",
+      ).mockResolvedValue(mockReactDOMServer as any);
 
       const component = React.createElement(SimpleComponent);
       const writableStream = new WritableStream();
@@ -186,13 +225,18 @@ describe("<lib/server/index.tsx/*>", () => {
 
       await pipeComponent(component, writableStream, options);
 
-      expect(renderStreamSpy).toHaveBeenCalledWith(component, options);
+      expect(mockReactDOMServer.renderToReadableStream).toHaveBeenCalledWith(
+        component,
+        options,
+      );
       expect(mockPipeTo).toHaveBeenCalledWith(writableStream);
 
-      renderStreamSpy.mockRestore();
+      peerDepSpy.mockRestore();
+      mockReactDOMServer.renderToReadableStream.mockRestore();
       mockPipeTo.mockRestore();
     });
   });
+
   describe("[module:pipeComponentToWritableCallbacks]", () => {
     test("it should call callback with component chunks", async () => {
       const component = React.createElement(SimpleComponent);
@@ -383,17 +427,31 @@ describe("<lib/server/index.tsx/*>", () => {
     test("should handle ReadableStream conversion errors", async () => {
       const component = React.createElement(SimpleComponent);
 
-      // Mock a failing renderToReadableStream
-      const renderStreamSpy = spyOn(ReactDOMServer, "renderToReadableStream");
-      renderStreamSpy.mockRejectedValue(new Error("Stream creation failed"));
+      // Mock a failing renderToReadableStream through PeerDependencyManager
+      const mockReactDOMServer = {
+        renderToReadableStream: spyOn(
+          ReactDOMServer,
+          "renderToReadableStream",
+        ).mockRejectedValue(new Error("Stream creation failed")),
+      };
+      const peerDepSpy = spyOn(
+        PeerDependencyManager,
+        "useReactDOMServer",
+      ).mockResolvedValue(mockReactDOMServer as any);
 
-      const mockWriteStream = new Writable() as WriteStream;
+      // Create a proper mock WriteStream that implements _write
+      const mockWriteStream = new Writable({
+        write(chunk, encoding, callback) {
+          callback();
+        },
+      }) as WriteStream;
 
       await expect(
         pipeComponentToNodeStream(component, mockWriteStream),
       ).rejects.toThrow("Stream creation failed");
 
-      renderStreamSpy.mockRestore();
+      peerDepSpy.mockRestore();
+      mockReactDOMServer.renderToReadableStream.mockRestore();
     });
 
     test("should resolve when piping completes successfully", async () => {
@@ -495,7 +553,7 @@ describe("<lib/server/index.tsx/*>", () => {
       });
 
       // Test string rendering
-      const stringResult = transformComponentToString(component);
+      const stringResult = await transformComponentToString(component);
       expect(stringResult).toContain("<title>Test Page</title>");
       expect(stringResult).toContain("<h1>Welcome</h1>");
 
@@ -521,7 +579,7 @@ describe("<lib/server/index.tsx/*>", () => {
       const component = React.createElement(TestComponent);
 
       // Get string version
-      const stringResult = transformComponentToString(component);
+      const stringResult = await transformComponentToString(component);
 
       // Get stream version via callback
       const streamChunks: string[] = [];
@@ -541,7 +599,7 @@ describe("<lib/server/index.tsx/*>", () => {
   });
 
   describe("Edge cases and performance", () => {
-    test("should handle deeply nested components", () => {
+    test("should handle deeply nested components", async () => {
       const createNestedComponent = (depth: number): React.ReactElement => {
         if (depth === 0) {
           return React.createElement("span", null, "Deep");
@@ -554,13 +612,13 @@ describe("<lib/server/index.tsx/*>", () => {
       };
 
       const deepComponent = createNestedComponent(50);
-      const result = transformComponentToString(deepComponent);
+      const result = await transformComponentToString(deepComponent);
 
       expect(result).toContain("<span>Deep</span>");
       expect((result.match(/<div>/g) || []).length).toBe(50);
     });
 
-    test("should handle components with many siblings", () => {
+    test("should handle components with many siblings", async () => {
       const ManyChildrenComponent = () =>
         React.createElement(
           "div",
@@ -571,13 +629,13 @@ describe("<lib/server/index.tsx/*>", () => {
         );
 
       const component = React.createElement(ManyChildrenComponent);
-      const result = transformComponentToString(component);
+      const result = await transformComponentToString(component);
 
       expect(result).toContain("Child 0");
       expect(result).toContain("Child 99");
     });
 
-    test("should handle components with special characters", () => {
+    test("should handle components with special characters", async () => {
       const SpecialCharsComponent = () =>
         React.createElement(
           "div",
@@ -588,7 +646,7 @@ describe("<lib/server/index.tsx/*>", () => {
         );
 
       const component = React.createElement(SpecialCharsComponent);
-      const result = transformComponentToString(component);
+      const result = await transformComponentToString(component);
 
       // React should escape these properly
       expect(result).toContain("&lt;&gt;&amp;");
