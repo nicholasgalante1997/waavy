@@ -1,7 +1,7 @@
 #!/bin/bash
-set -e
+set -e;
 
-chmod 755 ./out/waavy-linux-x64-modern
+chmod +x ./out/waavy-linux-x64-modern
 
 time ./out/waavy-linux-x64-modern render ./lib/__tests__/components/Minimal.tsx
 echo "##### <render/linux/sh -- Minimal Typescript> #####"
