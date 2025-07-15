@@ -1,10 +1,12 @@
 import type { Command } from "commander";
+import Features from "@/utils/models/Features";
 import type Workers from "@/workers";
-import ActionUtils from "../utils";
 import renderAction from "./Action";
 
 export function setupRenderAction(program: Command) {
-  if (!ActionUtils.shouldInclude("render")) return;
+  const enabled = Features.isEnabled("COMMAND_LINE_ACTIONS_RENDER");
+  if (!enabled) return;
+
   program
     .command("render")
     .description(

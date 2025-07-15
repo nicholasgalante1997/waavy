@@ -60,4 +60,12 @@ export default {
       },
     }),
   },
+  features: {
+    COMMAND_LINE_ACTIONS_BUNDLE: false,
+    COMMAND_LINE_ACTIONS_CREATE: false,
+    COMMAND_LINE_ACTIONS_PRERENDER: false,
+    COMMAND_LINE_ACTIONS_RENDER: true,
+    COMMAND_LINE_ACTIONS_SSG: false,
+    COMMAND_LINE_ACTIONS_UPGRADE: false,
+  },
 };

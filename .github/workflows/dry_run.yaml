@@ -1,8 +1,12 @@
 name: Dry Run (Release)
+
 on:
   push:
   pull_request:
   workflow_dispatch:
+
+env:
+  WAAVY_SKIP_POSTINSTALL: "true"
 
 jobs:
   test:
@@ -36,12 +40,6 @@ jobs:
       - name: Build
         env:
           NODE_ENV: production
-          WAAVY_CLI_COMMAND_INCLUDE_BUNDLE: ${{ secrets.WAAVY_CLI_COMMAND_INCLUDE_BUNDLE }}
-          WAAVY_CLI_COMMAND_INCLUDE_CREATE: ${{ secrets.WAAVY_CLI_COMMAND_INCLUDE_CREATE }}
-          WAAVY_CLI_COMMAND_INCLUDE_PRERENDER: ${{ secrets.WAAVY_CLI_COMMAND_INCLUDE_PRERENDER }}
-          WAAVY_CLI_COMMAND_INCLUDE_RENDER: ${{ secrets.WAAVY_CLI_COMMAND_INCLUDE_RENDER }}
-          WAAVY_CLI_COMMAND_INCLUDE_SSG: ${{ secrets.WAAVY_CLI_COMMAND_INCLUDE_SSG }}
-          WAAVY_CLI_COMMAND_INCLUDE_UPGRADE: ${{ secrets.WAAVY_CLI_COMMAND_INCLUDE_UPGRADE }}
         run: bun run build
       - name: List Output
         run: ls -la out

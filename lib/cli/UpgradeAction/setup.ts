@@ -1,9 +1,10 @@
 import { type Command } from "commander";
-import ActionUtils from "../utils";
+import Features from "@/utils/models/Features";
 import upgradeAction from "./Action";
 
 export function setupUpgradeAction(program: Command) {
-  if (!ActionUtils.shouldInclude("upgrade")) return;
+  const enabled = Features.isEnabled("COMMAND_LINE_ACTIONS_UPGRADE");
+  if (!enabled) return;
 
   program
     .command("upgrade")
@@ -13,24 +14,12 @@ export function setupUpgradeAction(program: Command) {
       "Optional, the version to upgrade to. Defaults to latest.",
     )
     .action(async (options) => {
-      /**
-       * TODO implement logic for
-       *
-       * - determine current version
-       * - determine latest version
-       *
-       */
-
       try {
         await upgradeAction({
           currentVersion: "",
           latestVersion: "",
           requestedVersion: "",
         });
-      } catch (e) {
-        /**
-         * Report error if telemetry is enabled
-         */
-      }
+      } catch (e) {}
     });
 }

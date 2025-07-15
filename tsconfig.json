@@ -27,6 +27,7 @@
             "@/*": [
                 "./lib/*"
             ],
+            "@pkg/config": ["./config.ts"],
             "@pkg/metadata": ["./package.json"]
         },
         "outDir": "./out",

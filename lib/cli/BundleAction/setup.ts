@@ -1,9 +1,10 @@
 import { type Command } from "commander";
-import ActionUtils from "../utils";
+import Features from "@/utils/models/Features";
 import bundleAction from "./Action";
 
 export function setupBundleAction(program: Command) {
-  if (!ActionUtils.shouldInclude("bundle")) return;
+  const enabled = Features.isEnabled("COMMAND_LINE_ACTIONS_BUNDLE");
+  if (!enabled) return;
 
   program
     .command("bundle")
@@ -22,20 +23,8 @@ export function setupBundleAction(program: Command) {
     )
     .option("--clean", "Clean the output directory before building.", false)
     .action(async ({ config, ...options }) => {
-      /**
-       * TODO implement logic for
-       *
-       * - load waavy.bundler.config.ts and pass config into bundleAction
-       * - can re-use a lot of build.ts logic here
-       *
-       */
-
       try {
         await bundleAction({ ...options });
-      } catch (e) {
-        /**
-         * Report error if telemetry is enabled
-         */
-      }
+      } catch (e) {}
     });
 }

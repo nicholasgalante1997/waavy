@@ -1,27 +1,16 @@
 import { type Command } from "commander";
-import ActionUtils from "../utils";
+import Features from "@/utils/models/Features";
 import prerenderAction from "./Action";
 
 export function setupPrerenderAction(program: Command) {
-  if (!ActionUtils.shouldInclude("prerender")) return;
+  const enabled = Features.isEnabled("COMMAND_LINE_ACTIONS_PRERENDER");
+  if (!enabled) return;
   program
     .command("prerender")
     .description("TODO")
     .action(async (options) => {
-      /**
-       * TODO implement logic for
-       *
-       * - determine current version
-       * - determine latest version
-       *
-       */
-
       try {
         await prerenderAction({});
-      } catch (e) {
-        /**
-         * Report error if telemetry is enabled
-         */
-      }
+      } catch (e) {}
     });
 }

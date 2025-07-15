@@ -1,10 +1,12 @@
 import { input, select } from "@inquirer/prompts";
 import { type Command } from "commander";
-import ActionUtils from "../utils";
+import Features from "@/utils/models/Features";
 import createAction from "./Action";
 
 export function setupCreateAction(program: Command) {
-  if (!ActionUtils.shouldInclude("create")) return;
+  const enabled = Features.isEnabled("COMMAND_LINE_ACTIONS_CREATE");
+  if (!enabled) return;
+
   program
     .command("create")
     .description("Create a new waavy project")

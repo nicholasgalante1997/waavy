@@ -1,27 +1,17 @@
 import { type Command } from "commander";
-import ActionUtils from "../utils";
+import Features from "@/utils/models/Features";
 import ssgAction from "./Action";
 
 export function setupStaticSiteGenAction(program: Command) {
-  if (!ActionUtils.shouldInclude("ssg")) return;
+  const enabled = Features.isEnabled("COMMAND_LINE_ACTIONS_SSG");
+  if (!enabled) return;
+
   program
     .command("ssg")
     .description("Static Site Generation with Waavy")
     .action(async (options) => {
-      /**
-       * TODO implement logic for
-       *
-       * - determine current version
-       * - determine latest version
-       *
-       */
-
       try {
         await ssgAction({});
-      } catch (e) {
-        /**
-         * Report error if telemetry is enabled
-         */
-      }
+      } catch (e) {}
     });
 }

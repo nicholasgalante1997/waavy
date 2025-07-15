@@ -129,7 +129,7 @@ const renderAction: RenderAction = async (pathToComponent, options, wm) => {
         props,
       };
       try {
-        await writeToCache(wm, writeToCacheOptions);
+        writeToCache(wm, writeToCacheOptions);
       } catch (e) {}
     }
 
@@ -295,7 +295,7 @@ async function useCached(options: UseCachedOptions): Promise<boolean> {
   return false;
 }
 
-async function writeToCache(
+function writeToCache(
   wm: Workers,
   data: CacheRenderOutputMessagePayload,
 ) {
