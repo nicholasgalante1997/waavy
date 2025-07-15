@@ -16,7 +16,7 @@ env:
 
 jobs:
   debug:
-    name: Check Types
+    name: Print Env
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
