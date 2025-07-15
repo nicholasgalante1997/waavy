@@ -4,8 +4,7 @@ set -e
 
 chmod +x ./out/waavy-linux-x64-modern
 
-time ./out/waavy-linux-x64-modern render ./lib/__tests__/components/Minimal.tsx
-echo "##### <render/linux/sh -- Minimal Typescript> #####"
+./out/waavy-linux-x64-modern render ./lib/__tests__/components/Minimal.tsx;
 
 # time ./out/waavy-linux-x64-modern render ./lib/__tests__/components/Minimal.tsx --name=Minimal2
 # echo "##### <render/linux/sh -- Minimal Typescript Named Export> #####"
