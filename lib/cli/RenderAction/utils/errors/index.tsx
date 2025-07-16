@@ -1,6 +1,5 @@
 import type { ComponentType } from "react";
 import path from "path";
-import { transformComponentToString } from "@/server";
 import type { RenderActionOptions } from "@/types";
 import { load, logger } from "@/utils";
 
@@ -10,11 +9,12 @@ type ErrorPageConfiguration = {
 };
 
 export function getErrorPageMarkup(
+  renderToString: (Component: any) => string,
   ErrorComponent: ComponentType<any>,
   error: unknown,
   errorInfo?: unknown,
 ) {
-  const page = transformComponentToString(<ErrorComponent error={error} />);
+  const page = renderToString(<ErrorComponent error={error} />);
   return page;
 }
 

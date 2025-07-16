@@ -41,7 +41,16 @@ const renderAction: RenderAction = async (componentPath, options) => {
     value: "",
     done: false,
   };
-  let errorPage = defaultErrorPage;
+
+  /**
+   * Clone by value prevents us from passing and modifying simple cloneable values in function scopes
+   * through argument passing
+   * If we want to modify values, we can pass them by reference but we need to use reference values (Objects)
+   */
+  let errorConfiguration = {
+    page: defaultErrorPage,
+  };
+
   let signal,
     timeout,
     timeoutFired = false;
@@ -93,10 +102,10 @@ const renderAction: RenderAction = async (componentPath, options) => {
       selector,
     });
 
-    const renderOptions = createRenderOptions({
+    const renderOptions = await createRenderOptions({
       bootstrap,
       ErrorComponent,
-      errorPage,
+      errorConfiguration,
       raOptions: options,
       signal,
       timeout,
@@ -134,7 +143,7 @@ const renderAction: RenderAction = async (componentPath, options) => {
       } catch (e) {}
     }
   } catch (error) {
-    handleError(error, strategy, verbose, errorPage);
+    handleError(error, strategy, verbose, errorConfiguration);
   } finally {
     if (signal && !timeoutFired && typeof timeout !== "undefined") {
       try {

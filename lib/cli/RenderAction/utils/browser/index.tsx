@@ -4,13 +4,14 @@ import {
   DEFAULT_WAAVY_PROPS_CACHE_KEY,
 } from "@/constants";
 import type { RenderActionOptions } from "@/types";
-import { asOptionalNumber, getVersion, logger } from "@/utils";
+import { asOptionalNumber, getVersion } from "@/utils";
+import PeerDependencyManager from "@/utils/models/PeerDependencyManager";
 import { getErrorPageMarkup } from "../errors";
 
 type CreateRenderOptionsConfig = {
   bootstrap?: string[];
   ErrorComponent?: React.ComponentType<{ error: unknown }> | null;
-  errorPage?: string;
+  errorConfiguration?: { page: string };
   raOptions?: RenderActionOptions;
   signal?: AbortController["signal"];
   timeout?: NodeJS.Timeout;
@@ -18,32 +19,31 @@ type CreateRenderOptionsConfig = {
   waavyScriptContent?: string;
 };
 
-export function createRenderOptions({
+export async function createRenderOptions({
   bootstrap,
   ErrorComponent,
-  errorPage,
+  errorConfiguration,
   raOptions,
   signal,
   timeout,
   timeoutFired,
   waavyScriptContent,
 }: CreateRenderOptionsConfig) {
-  /**
-   * 6. Create renderOptions that will be used to configure the ReactDOM render behavior
-   */
+  const { renderToString } = await PeerDependencyManager.useReactDOMServer();
   const renderOptions: RenderToReadableStreamOptions = {
     bootstrapModules: bootstrap,
     bootstrapScriptContent: waavyScriptContent,
     onError: (error, errorInfo) => {
-      // if (ErrorComponent) {
-      //   try {
-      //     errorPage = await getErrorPageMarkup(
-      //       ErrorComponent,
-      //       error,
-      //       errorInfo,
-      //     );
-      //   } catch (e) {}
-      // }
+      if (ErrorComponent && errorConfiguration) {
+        try {
+          errorConfiguration.page = getErrorPageMarkup(
+            renderToString,
+            ErrorComponent,
+            error,
+            errorInfo,
+          );
+        } catch (e) {}
+      }
     },
     progressiveChunkSize: asOptionalNumber(raOptions?.chunk),
   };
@@ -56,9 +56,6 @@ export function createRenderOptions({
   const timeoutDuration = asOptionalNumber(raOptions?.maxTimeout);
   if (!!timeoutDuration) {
     const controller = new AbortController();
-    /**
-     * We request maxTimeout in seconds
-     */
     const duration = timeoutDuration * 1000;
     timeout = setTimeout(() => {
       controller.abort();

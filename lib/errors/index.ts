@@ -16,7 +16,7 @@ export async function handleError(
   error: unknown,
   outputStrategy: OutputStrategy,
   verbose = false,
-  errorPage?: string,
+  errorConfiguration?: { page: string },
 ) {
   if (verbose) {
     /**
@@ -36,8 +36,8 @@ export async function handleError(
      * In this case, if we do have an error page, we want to report the error page string to stderr
      * if a consumer is listening to stderr, they can stream the fallback response
      */
-    if (errorPage) {
-      await handleWriteErrorPageToStdErr(errorPage);
+    if (errorConfiguration?.page) {
+      await handleWriteErrorPageToStdErr(errorConfiguration?.page);
     }
 
     throw error;
@@ -56,16 +56,16 @@ export async function handleError(
      * if a consumer is listening to stderr, they can stream the fallback response
      */
 
-    if (errorPage) {
-      await handleWriteErrorPageToStdErr(errorPage);
+    if (errorConfiguration?.page) {
+      await handleWriteErrorPageToStdErr(errorConfiguration?.page);
     }
 
     throw error;
   }
 
   if (error instanceof PropDataLoaderException) {
-    if (errorPage) {
-      await handleWriteErrorPageToStdErr(errorPage);
+    if (errorConfiguration?.page) {
+      await handleWriteErrorPageToStdErr(errorConfiguration?.page);
     }
 
     throw error;
