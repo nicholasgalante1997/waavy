@@ -8,14 +8,12 @@ import { setupStaticSiteGenAction } from "./cli/SSGAction";
 import { setupUpgradeAction } from "./cli/UpgradeAction";
 import ProcessManager from "./utils/models/ProcessManager";
 import { getVersion } from "./utils";
-import Workers from "./workers";
 
 ProcessManager.setupHandlers();
 
-const workerManager = new Workers();
 const program = new Command();
 
-setupProgramMetadata(program, getVersion() as string, workerManager);
+setupProgramMetadata(program, getVersion() as string);
 setupProgramActions(program, [
   setupBundleAction,
   setupCreateAction,

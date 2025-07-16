@@ -12,7 +12,7 @@ import RenderCacheHeaderDatabase from "./CacheHeaderDatabase";
 
 type CacheType = Exclude<RenderActionOptions["cacheType"], undefined>;
 
-type CacheManagerConstructorOptions = {
+type RenderCacheConstructorOptions = {
   type: CacheType;
   key: string;
   component: {
@@ -22,7 +22,7 @@ type CacheManagerConstructorOptions = {
   };
 };
 
-export default class CacheManager {
+export default class RenderCache {
   private static _hcache_db: RenderCacheHeaderDatabase =
     new RenderCacheHeaderDatabase();
 
@@ -46,7 +46,7 @@ export default class CacheManager {
     if (typeof props !== "object") return false;
 
     return Boolean(
-      CacheManager._hcache_db.find({
+      RenderCache._hcache_db.find({
         cname: cname,
         cpath: cpath,
         props: props,
@@ -60,7 +60,7 @@ export default class CacheManager {
     props: unknown,
   ): boolean {
     try {
-      return CacheManager._hcache_db.add({
+      return RenderCache._hcache_db.add({
         cname,
         cpath,
         props,
@@ -71,7 +71,7 @@ export default class CacheManager {
     }
   }
 
-  constructor(options: CacheManagerConstructorOptions) {
+  constructor(options: RenderCacheConstructorOptions) {
     this.type = options.type;
     this.cacheKey = options.key;
     this.cname = options.component.name;
@@ -88,7 +88,7 @@ export default class CacheManager {
           : new CacheBunSqlite3(cacheEntry);
       const didCache = await _cache.cache(cacheEntry.cachedRenderOutput);
       if (didCache) {
-        CacheManager.addToHeaderCache(
+        RenderCache.addToHeaderCache(
           cacheEntry.cpath,
           cacheEntry.cname,
           this.cprops,

@@ -1,39 +1,21 @@
+import chalk from "chalk";
 import type { Command } from "commander";
-import type Workers from "@/workers";
+import _ from "@pkg/config";
 
 export function setupProgramMetadata(
   program: Command,
   version: string,
-  workerManager?: Workers,
-) {
-  program
-    .name("waavy")
+): Command {
+  return program
+    .name(chalk.bold(chalk.blueBright(_.name)))
     .version(version)
-    .description(
-      "A library to support rendering React components in non-javascript server environments",
-    );
-
-  if (workerManager) {
-    Object.defineProperty(program, "_workerManager", {
-      get(): Workers {
-        return workerManager;
-      },
-      set(v) {
-        /** No overwriting workerManager */
-      },
-    });
-  }
-
-  return program;
+    .description(chalk.dim(_.description));
 }
 
 export function setupProgramActions(
   program: Command,
-  setupActionFns: Array<(program: Command) => void>,
+  setupCommands: Array<(program: Command) => void>,
 ) {
-  for (const setupActionFn of setupActionFns) {
-    setupActionFn(program);
-  }
-
+  setupCommands.forEach((setupCmd) => setupCmd(program));
   return program;
 }

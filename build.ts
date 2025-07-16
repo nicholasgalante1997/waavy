@@ -119,7 +119,6 @@ async function buildExecutable(
       `--target=${targetConfig.target}`,
       ...external.map((pkg) => `--external=${pkg}`),
       sources.cli.main,
-      sources.cli.worker,
       `--outfile=${outfile}`,
     ];
 

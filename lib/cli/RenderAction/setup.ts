@@ -1,6 +1,5 @@
 import type { Command } from "commander";
 import Features from "@/utils/models/Features";
-import type Workers from "@/workers";
 import renderAction from "./Action";
 
 export function setupRenderAction(program: Command) {
@@ -100,12 +99,8 @@ export function setupRenderAction(program: Command) {
       false,
     )
     .action(
-      async (pathToComponent, options) =>
-        await renderAction(
-          pathToComponent,
-          options,
-          (program as any)._workerManager as Workers,
-        ),
+      async (componentPath, options) =>
+        await renderAction(componentPath, options),
     );
 
   return program;

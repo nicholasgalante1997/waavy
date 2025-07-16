@@ -5,14 +5,9 @@ import {
 } from "@/server";
 import defaultErrorPage from "@/templates/waavy-error-page";
 import type { RenderAction, RenderActionOptions } from "@/types";
-import {
-  WorkerMessageDataAction,
-  type CacheRenderOutputMessagePayload,
-} from "@/types/worker";
 import PeerDependencyManager from "@/utils/models/PeerDependencyManager";
-import Workers, { createWorkerMessageData } from "@/workers";
 
-import CacheManager from "./models/CacheManager";
+import { useCached, writeToCache } from "./cache";
 import {
   createRenderOptions,
   createWindowAssignmentInlineScript,
@@ -25,13 +20,13 @@ import {
   validateComponentExtension,
 } from "./utils";
 
-const renderAction: RenderAction = async (pathToComponent, options, wm) => {
+const renderAction: RenderAction = async (componentPath, options) => {
   const strategy = getOutputStrategy(options);
 
   const {
     await: _await = false,
-    bootstrap,
-    cache = false,
+    bootstrap = [],
+    cache,
     cacheKey,
     cacheType,
     errorComponentName,
@@ -42,7 +37,10 @@ const renderAction: RenderAction = async (pathToComponent, options, wm) => {
     verbose = false,
   } = options;
 
-  let cacheableRenderOutput: string | null = null;
+  let cacheableRenderOutput: { value: string; done: false } = {
+    value: "",
+    done: false,
+  };
   let errorPage = defaultErrorPage;
   let signal,
     timeout,
@@ -50,22 +48,20 @@ const renderAction: RenderAction = async (pathToComponent, options, wm) => {
 
   try {
     /**
-     * First, try and load React into scope.
-     *
-     * If React cannot be resolved via Bun's module resolution algorithm,
-     * it is likely not installed within the project's working directory,
-     * and since we cannot bundle react, react-dom into the lib,
-     * we need an external peer dependency version of React, ReactDOM,
-     * or we need to throw an error and stop the process here.
-     *
+     * @throws
+     * This call (dynamic import) will throw if React cannot be resolved with Bun's module resolution algorithm
      */
     const __React = await PeerDependencyManager.useReact();
+    /**
+     * @throws
+     * This call (dynamic import) will throw if ReactDOM cannot be resolved with Bun's module resolution algorithm
+     */
     const __ReactDOMServer = await PeerDependencyManager.useReactDOMServer();
 
-    validateComponentExtension(pathToComponent);
+    validateComponentExtension(componentPath);
 
     const cacheIsActive = cache && cacheKey && cacheType;
-    const props = await getComponentProps(pathToComponent, options);
+    const props = await getComponentProps(componentPath, options);
 
     if (cacheIsActive) {
       const useCachedOptions = {
@@ -76,7 +72,7 @@ const renderAction: RenderAction = async (pathToComponent, options, wm) => {
         component: {
           name,
           props,
-          path: pathToComponent,
+          path: componentPath,
         },
         output: strategy,
       };
@@ -84,7 +80,7 @@ const renderAction: RenderAction = async (pathToComponent, options, wm) => {
       if (didUseCached) return;
     }
 
-    const Component = await loadComponent(pathToComponent, name);
+    const Component = await loadComponent(componentPath, name);
     const ErrorComponent = await getErrorComponentOrNull(
       errorComponentPath,
       errorComponentName,
@@ -116,24 +112,27 @@ const renderAction: RenderAction = async (pathToComponent, options, wm) => {
         renderOptions,
         strategy,
       },
-      (cacheableRenderOutput ||= ""),
+      cacheableRenderOutput,
     );
 
-    if (cacheIsActive && cacheableRenderOutput) {
-      const writeToCacheOptions: CacheRenderOutputMessagePayload = {
-        cachedRenderOutput: cacheableRenderOutput,
-        cacheKey,
-        cacheType,
-        cname: name,
-        cpath: pathToComponent,
-        props,
-      };
+    if (
+      cacheIsActive &&
+      cacheableRenderOutput.value &&
+      cacheableRenderOutput.done
+    ) {
       try {
-        writeToCache(wm, writeToCacheOptions);
+        await writeToCache({
+          cacheKey,
+          cacheType,
+          component: {
+            cacheableRenderOutput: cacheableRenderOutput.value,
+            name,
+            path: componentPath,
+            props,
+          },
+        });
       } catch (e) {}
     }
-
-    return;
   } catch (error) {
     handleError(error, strategy, verbose, errorPage);
   } finally {
@@ -185,54 +184,33 @@ type HandleRenderAndOutputOptions = {
 
 async function handleRenderAndOutput(
   options: HandleRenderAndOutputOptions,
-  cacheableRenderOutput: string,
+  cacheableRenderOutput: { value: string; done: boolean },
 ) {
   const Component: any = options.Component;
   const props = options.props;
 
   switch (options.strategy) {
-    case OutputStrategy.SerializedJson: {
-      const html = await pipeComponentToCollectedString(
-        <Component {...props} />,
-        options.renderOptions,
+    case OutputStrategy.SerializedJson:
+      return await renderToSerializedJson(
+        Component,
+        props,
+        options,
+        cacheableRenderOutput,
       );
-      if (options.commandOptions.cache) {
-        cacheableRenderOutput = html;
-      }
-      process.stdout.write(JSON.stringify({ html, exitCode: 0, props }));
-      break;
-    }
-    case OutputStrategy.StdoutString: {
-      const html = await pipeComponentToCollectedString(
-        <Component {...props} />,
-        options.renderOptions,
+    case OutputStrategy.StdoutString:
+      return await renderToMarkup(
+        Component,
+        props,
+        options,
+        cacheableRenderOutput,
       );
-      if (options.commandOptions.cache) {
-        cacheableRenderOutput = html;
-      }
-      process.stdout.write(html);
-      break;
-    }
-    case OutputStrategy.StdoutStream: {
-      if (options.commandOptions.cache) {
-        const updateCacheableRenderOutput = (chunk: string) => {
-          if (cacheableRenderOutput == null) cacheableRenderOutput = "";
-          cacheableRenderOutput += chunk;
-        };
-        const listeners = [updateCacheableRenderOutput];
-        await pipeComponentToStdout(
-          <Component {...props} />,
-          options.renderOptions,
-          listeners,
-        );
-      } else {
-        await pipeComponentToStdout(
-          <Component {...props} />,
-          options.renderOptions,
-        );
-      }
-      break;
-    }
+    case OutputStrategy.StdoutStream:
+      return await renderToStdoutStream(
+        Component,
+        props,
+        options,
+        cacheableRenderOutput,
+      );
     case OutputStrategy.NamedPipe: {
       await pipeComponentToNamedPipe(
         options,
@@ -245,66 +223,61 @@ async function handleRenderAndOutput(
   }
 }
 
-type UseCachedOptions = {
-  cache: {
-    key: string;
-    type: string;
-  };
-  component: {
-    path: string;
-    name: string;
-    props: unknown;
-  };
-  output: OutputStrategy;
-};
-
-async function useCached(options: UseCachedOptions): Promise<boolean> {
-  const hasCached = CacheManager.isInCache(
-    options.component.path,
-    options.component.name,
-    options.component.props,
+async function renderToSerializedJson(
+  Component: any,
+  props: any,
+  options: any,
+  cacheableRenderOutput: { value: string; done: boolean },
+) {
+  const html = await pipeComponentToCollectedString(
+    <Component {...props} />,
+    options.renderOptions,
   );
-  if (hasCached) {
-    const cm = new CacheManager({
-      key: options.cache.key,
-      type: options.cache.type as any,
-      component: options.component,
-    });
-    const ce = await cm.find();
-    if (ce) {
-      const { cachedRenderOutput } = ce;
-      switch (options.output) {
-        case OutputStrategy.StdoutStream:
-        case OutputStrategy.StdoutString:
-          !process.stdout.write(cachedRenderOutput) &&
-            process.stdout.emit("drain");
-          return true;
-        case OutputStrategy.SerializedJson:
-          !process.stdout.write(
-            JSON.stringify({
-              html: cachedRenderOutput,
-              exitCode: 0,
-              props: options.component.props,
-            }),
-          ) && process.stdout.emit("drain");
-          return true;
-      }
-    }
+  if (options.commandOptions.cache) {
+    cacheableRenderOutput.value = html;
+    cacheableRenderOutput.done = true;
   }
-
-  return false;
+  process.stdout.write(JSON.stringify({ html, exitCode: 0, props }));
 }
 
-function writeToCache(
-  wm: Workers,
-  data: CacheRenderOutputMessagePayload,
+async function renderToMarkup(
+  Component: any,
+  props: any,
+  options: any,
+  cacheableRenderOutput: { value: string; done: boolean },
 ) {
-  const worker = wm.createWorker();
-  const message = createWorkerMessageData<CacheRenderOutputMessagePayload>(
-    WorkerMessageDataAction.Cache,
-    data,
+  const html = await pipeComponentToCollectedString(
+    <Component {...props} />,
+    options.renderOptions,
   );
-  worker.postMessage(message);
+  if (options.commandOptions.cache) {
+    cacheableRenderOutput.value = html;
+    cacheableRenderOutput.done = true;
+  }
+  process.stdout.write(html);
+}
+
+async function renderToStdoutStream(
+  Component: any,
+  props: any,
+  options: any,
+  cacheableRenderOutput: { value: string; done: boolean },
+) {
+  const listeners: ((chunk: string) => void | Promise<void>)[] = [];
+  if (options.commandOptions.cache) {
+    const updateCacheableRenderOutput = (chunk: string) => {
+      cacheableRenderOutput.value += chunk;
+    };
+    listeners.push(updateCacheableRenderOutput);
+  }
+  await pipeComponentToStdout(
+    <Component {...props} />,
+    options.renderOptions,
+    listeners,
+  );
+  if (options.commandOptions.cache) {
+    cacheableRenderOutput.done = true;
+  }
 }
 
 export default renderAction;

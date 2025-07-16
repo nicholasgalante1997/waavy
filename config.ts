@@ -1,8 +1,13 @@
 export default {
+  name: "waavy",
+  description: `A library for rendering React components in non-javascript server runtimes.
+
+For more information, visit: https://github.com/nicholasgalante1997/waavy`,
   build: {
     sources: {
       cli: {
         main: "lib/index.ts",
+        /** @deprecated */
         worker: "lib/_worker.tsx",
       },
       exports: {

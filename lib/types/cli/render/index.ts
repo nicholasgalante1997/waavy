@@ -1,5 +1,3 @@
-import type Workers from "@/workers";
-
 export type RenderContext = {};
 
 export type LoaderFn<Props> = (
@@ -10,7 +8,6 @@ export type LoaderFn<Props> = (
 export type RenderAction = (
   pathToComponent: string,
   options: RenderActionOptions,
-  wm: Workers /** TODO run benchmarks to see what the performance benefit is of using workers to perform caching operations. */,
 ) => void | Promise<void>;
 
 export type RenderActionOptions<Props = Record<string, unknown>> = {
