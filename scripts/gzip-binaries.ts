@@ -4,22 +4,22 @@ import path from "path";
 import { performance } from "perf_hooks";
 import { createGzip } from "zlib";
 import { pipeline } from "stream/promises";
-import config from "../config";
+import config from "@pkg/config";
 
 const log = debug("waavy:compress:gzip");
-const outdir = path.join(process.cwd(), "out");
+const outdir = path.join(process.cwd(), "out", "bin", "render");
 
 const executables = config.build.targets.map((t) =>
   path.resolve(outdir, t.name),
 );
 
-async function compress() {
+async function compressRenderCommandExecutables() {
   await Promise.all(
     executables.map(async function (executable) {
       const gzip = createGzip({ level: 9, memLevel: 9 });
       const filepath = executable.includes("windows")
-        ? executable + ".exe"
-        : executable;
+        ? executable + "-render" + ".exe"
+        : executable + "-render";
       const gzipPath = `${filepath}.gz`;
       const input = createReadStream(filepath);
       const output = createWriteStream(gzipPath);
@@ -30,7 +30,7 @@ async function compress() {
 
 const start = performance.now();
 
-compress()
+compressRenderCommandExecutables()
   .then(() =>
     log(
       "Compression completed successfully in %d ms",

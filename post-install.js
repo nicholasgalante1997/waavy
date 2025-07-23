@@ -14,15 +14,13 @@ try {
   /** Fail silently */
 }
 
-// Skip install in local development environments
-if (process.env.WAAVY_SKIP_POSTINSTALL === "true") {
-  console.log("Skipping postinstall in local development environment");
-  process.exit(0);
-}
+const skipPostInstall =
+  process.env.WAAVY_SKIP_POSTINSTALL === "true" ||
+  process.env.CI === "true" ||
+  process.env.GITHUB_ACTIONS === "true";
 
-// Skip postinstall in CI environments
-if (process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true") {
-  console.log("Skipping postinstall in CI environment");
+if (skipPostInstall) {
+  console.log("Skipping waavy post-install job!");
   process.exit(0);
 }
 
@@ -42,39 +40,38 @@ postinstall()
 
 async function postinstall() {
   try {
-    await downloadBinary();
+    await downloadRenderCommandBinaries();
   } catch (error) {
     console.error("Error during post-installation:", error.message);
     process.exit(1);
   }
 }
 
-async function downloadBinary() {
+async function downloadRenderCommandBinaries() {
   const platform = process.platform;
   const arch = process.arch;
 
-  const platformMap = {
-    linux: "waavy-linux-x64-modern",
-    darwin: "waavy-macos-x64",
-    win32: "waavy-windows-x64-modern.exe",
-  };
+  const platformMap = Object.freeze({
+    linux: {
+      x64: "waavy-linux-x64-modern-render",
+      arm64: "waavy-linux-arm64-render",
+    },
+    darwin: {
+      x64: "waavy-macos-x64-render",
+      arm64: "waavy-macos-arm64-render",
+    },
+    win32: {
+      x64: "waavy-windows-x64-modern-render.exe",
+    },
+  });
 
-  let binaryName = platformMap[platform];
-
-  if (arch === "arm64") {
-    binaryName =
-      platform === "linux"
-        ? "waavy-linux-arm64"
-        : platform === "darwin"
-          ? "waavy-macos-arm64"
-          : null;
-  }
+  let binaryName = platformMap[platform][arch];
 
   if (!binaryName) {
     warnPlatformCompatabilityAndExit();
   }
 
-  const binDir = path.join(__dirname, "bin");
+  const binDir = path.join(__dirname, "out", "bin", "render");
   const binaryPath = path.join(binDir, binaryName);
 
   if (fs.existsSync(binaryPath)) {
@@ -162,7 +159,7 @@ async function downloadAndDecompressFile(url, binaryPath, maxRedirects = 5) {
 
             // Clear line and show progress
             process.stdout.write(
-              `\r[${bar}] ${progress}% (${speed.toFixed(1)} MB/s)`
+              `\r[${bar}] ${progress}% (${speed.toFixed(1)} MB/s)`,
             );
 
             lastProgress = progress;

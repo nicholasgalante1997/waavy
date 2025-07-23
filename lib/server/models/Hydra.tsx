@@ -26,7 +26,7 @@ type HydraWindowAssignmentScriptOptions<Props> = {
 };
 
 export default class Hydra<Props> {
-  Component?: React.ComponentType<Props>;
+  Component?: any;
   props?: Props;
   pathToComponent?: string;
   selector?: string;
@@ -52,18 +52,14 @@ export default class Hydra<Props> {
     `;
   }
 
-  constructor(
-    Component?: React.ComponentType<Props>,
-    props?: Props,
-    pathToComponent?: string,
-  ) {
+  constructor(Component?: any, props?: Props, pathToComponent?: string) {
     this.Component = Component;
     this.props = props;
     this.pathToComponent = pathToComponent;
     this.selector = "#waavyroot";
   }
 
-  setComponent(Component: React.ComponentType<Props>) {
+  setComponent(Component: any) {
     this.Component = Component;
     return this;
   }

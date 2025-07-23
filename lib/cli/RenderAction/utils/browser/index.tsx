@@ -1,4 +1,3 @@
-import type { RenderToReadableStreamOptions } from "react-dom/server";
 import {
   DEFAULT_WAAVY_HYDRATION_SELECTOR,
   DEFAULT_WAAVY_PROPS_CACHE_KEY,
@@ -10,7 +9,7 @@ import { getErrorPageMarkup } from "../errors";
 
 type CreateRenderOptionsConfig = {
   bootstrap?: string[];
-  ErrorComponent?: React.ComponentType<{ error: unknown }> | null;
+  ErrorComponent?: any;
   errorConfiguration?: { page: string };
   raOptions?: RenderActionOptions;
   signal?: AbortController["signal"];
@@ -30,10 +29,10 @@ export async function createRenderOptions({
   waavyScriptContent,
 }: CreateRenderOptionsConfig) {
   const { renderToString } = await PeerDependencyManager.useReactDOMServer();
-  const renderOptions: RenderToReadableStreamOptions = {
+  const renderOptions: any = {
     bootstrapModules: bootstrap,
     bootstrapScriptContent: waavyScriptContent,
-    onError: (error, errorInfo) => {
+    onError: (error: unknown, errorInfo: unknown) => {
       if (ErrorComponent && errorConfiguration) {
         try {
           errorConfiguration.page = getErrorPageMarkup(
@@ -66,7 +65,7 @@ export async function createRenderOptions({
     renderOptions.signal = signal;
   }
 
-  return renderOptions as RenderToReadableStreamOptions;
+  return renderOptions;
 }
 
 type HydraWindowAssignmentScriptOptions<Props> = {

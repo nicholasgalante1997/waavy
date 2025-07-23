@@ -1,12 +1,10 @@
-import type { ComponentType } from "react";
-
 import path from "path";
 import {
   ComponentNotFoundError,
   InvalidExtensionError,
   PropDataLoaderException,
 } from "@/errors";
-import { load, logger } from "@/utils";
+import { load } from "@/utils";
 import type { LoaderFn, RenderActionOptions } from "@/types";
 
 export function validateComponentExtension(pathToComponent: string) {
@@ -18,6 +16,11 @@ export function validateComponentExtension(pathToComponent: string) {
     );
   }
 }
+
+/**
+ * TODO figure out like what we're gonna do about this.
+ */
+type ComponentType<Props> = any;
 
 export async function loadComponent<Props = {}>(
   pathToComponent: string,

@@ -3,8 +3,8 @@ import { Readable } from "stream";
 import PeerDependencyManager from "@/utils/models/PeerDependencyManager";
 
 export async function transformComponentToString(
-  component: React.ReactElement,
-  options: ReactDOMServer.ServerOptions = {},
+  component: any,
+  options: any = {},
 ) {
   const React = await PeerDependencyManager.useReact();
   const ReactDOMServer = await PeerDependencyManager.useReactDOMServer();
@@ -12,8 +12,8 @@ export async function transformComponentToString(
 }
 
 export async function transformComponentToReadableStream(
-  component: React.ReactElement,
-  options: ReactDOMServer.RenderToReadableStreamOptions = {},
+  component: any,
+  options: any = {},
 ) {
   const React = await PeerDependencyManager.useReact();
   const ReactDOMServer = await PeerDependencyManager.useReactDOMServer();
@@ -21,9 +21,9 @@ export async function transformComponentToReadableStream(
 }
 
 export async function pipeComponent<W extends WritableStream<T>, T = any>(
-  component: React.ReactElement,
+  component: any,
   writable: W,
-  options: ReactDOMServer.RenderToReadableStreamOptions = {},
+  options: any = {},
 ) {
   const stream = await transformComponentToReadableStream(component, options);
   await stream.pipeTo(writable);
@@ -33,9 +33,9 @@ export async function pipeComponent<W extends WritableStream<T>, T = any>(
  * TODO look into replacing all usages of `pipeComponentToWritableCallback` with this function
  */
 export async function pipeComponentToWritableCallbacks(
-  component: React.ReactElement,
+  component: any,
   cbs: ((chunk: string) => void | Promise<void>)[],
-  options: ReactDOMServer.RenderToReadableStreamOptions = {},
+  options: any = {},
 ) {
   const stream = await transformComponentToReadableStream(component, options);
   const reader = stream.getReader();
@@ -57,9 +57,9 @@ export async function pipeComponentToWritableCallbacks(
  * @deprecated
  */
 export async function pipeComponentToWritableCallback(
-  component: React.ReactElement,
+  component: any,
   cb: (chunk: string) => void,
-  options: ReactDOMServer.RenderToReadableStreamOptions = {},
+  options: any = {},
 ) {
   const stream = await transformComponentToReadableStream(component, options);
   const reader = stream.getReader();
@@ -76,8 +76,8 @@ export async function pipeComponentToWritableCallback(
 }
 
 export async function pipeComponentToCollectedString(
-  component: React.ReactElement,
-  options: ReactDOMServer.RenderToReadableStreamOptions = {},
+  component: any,
+  options: any = {},
   listeners: ((chunk: string) => void | Promise<void>)[] = [],
   init?: string,
 ) {
@@ -96,8 +96,8 @@ export async function pipeComponentToCollectedString(
 }
 
 export async function pipeComponentToStdout(
-  component: React.ReactElement,
-  options: ReactDOMServer.RenderToReadableStreamOptions = {},
+  component: any,
+  options: any = {},
   listeners: ((chunk: string) => void | Promise<void>)[] = [],
 ) {
   await pipeComponentToWritableCallbacks(
@@ -133,9 +133,9 @@ function webStreamToNodeStream(webStream: ReadableStream): Readable {
 }
 
 export async function pipeComponentToNodeStream(
-  component: React.ReactElement,
+  component: any,
   nodeWriteStream: WriteStream,
-  options: ReactDOMServer.RenderToReadableStreamOptions = {},
+  options: any = {},
 ) {
   const webStream = await transformComponentToReadableStream(
     component,

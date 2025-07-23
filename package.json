@@ -4,15 +4,20 @@
   "version": "0.1.6",
   "type": "module",
   "bin": {
-    "waavy": "bin/waavy.js"
+    "waavy": "bin/waavy.js",
+    "create-waavy-app": "bin/create-waavy-app.js"
   },
   "files": [
     "bin/waavy.js",
+    "bin/create-waavy-app.js",
+    "bin/lib/",
     "out/browser.js",
     "out/browser.js.map",
     "out/server.js",
     "out/server.js.map",
+    "out/commands/",
     "out/lib/",
+    "templates/",
     "post-install.js",
     "package.json",
     "CHANGELOG.md",
@@ -48,10 +53,10 @@
   "scripts": {
     "postinstall": "node post-install.js",
     "clean": "rm -rf out",
-    "format": "prettier --write lib scripts bin build.ts config.ts",
-    "lint": "eslint lib",
+    "format": "prettier --write lib scripts bin build config/config.ts post-install.js",
+    "lint": "eslint lib build bin post-install.js config/config.ts",
     "check-types": "tsc -p tsconfig.json",
-    "bundle": "NODE_ENV=production DEBUG=waavy:* bun run build.ts --all --verbose",
+    "bundle": "NODE_ENV=production DEBUG=waavy:* bun run build/index.ts --all --verbose",
     "bundle:verbose": "bun run bundle -- --verbose",
     "bundle:all": "bun run bundle -- --all",
     "prebuild": "run-s clean test",
@@ -75,10 +80,11 @@
   },
   "dependencies": {
     "@inquirer/prompts": "^7.6.0",
-    "chalk": "^5.4.1",
+    "cac": "^6.7.14",
     "commander": "^14.0.0",
     "debug": "^4.4.1",
     "dotenv": "^16.5.0",
+    "picocolors": "^1.1.1",
     "printf": "^0.6.1",
     "undici": "^7.11.0"
   },
@@ -112,6 +118,7 @@
     "@tanstack/react-query-devtools": "^5.62.3",
     "@types/bun": "latest",
     "@types/debug": "^4.1.12",
+    "@types/node": "^24.0.15",
     "@types/react": "19",
     "@types/react-dom": "19",
     "docsify": "^4.13.1",

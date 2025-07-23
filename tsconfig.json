@@ -27,7 +27,7 @@
             "@/*": [
                 "./lib/*"
             ],
-            "@pkg/config": ["./config.ts"],
+            "@pkg/config": ["./config/config.ts"],
             "@pkg/metadata": ["./package.json"]
         },
         "outDir": "./out",
@@ -38,7 +38,10 @@
         "listEmittedFiles": true
     },
     "include": [
-        "lib"
+        "build",
+        "config/config.ts",
+        "lib",
+        "scripts",
     ],
     "exclude": [
         "node_modules"

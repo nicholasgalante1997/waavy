@@ -1,5 +1,3 @@
-import type { ComponentType, JSX } from "react";
-import type { RenderToReadableStreamOptions } from "react-dom/server";
 import fs from "fs";
 import path from "path";
 
@@ -11,13 +9,11 @@ import type { RenderActionOptions } from "@/types";
  * Creates a writable stream to the pipe file,
  * Streams the rendering of the component to the writer (file handle)
  */
-export async function pipeComponentToNamedPipe<
-  Props extends JSX.IntrinsicAttributes = Record<string, any>,
->(
+export async function pipeComponentToNamedPipe(
   options: RenderActionOptions,
-  Component: ComponentType,
-  props: Props = {} as Props,
-  renderToReadableStreamOptions: RenderToReadableStreamOptions = {},
+  Component: any,
+  props: Record<string, unknown> = {},
+  renderToReadableStreamOptions: any = {},
 ) {
   const pipePath = path.relative(options.pipe!, import.meta.url);
   const writable = fs.createWriteStream(pipePath);

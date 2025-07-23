@@ -1,5 +1,5 @@
-import chalk from "chalk";
 import type { Command } from "commander";
+import colors from "picocolors";
 import _ from "@pkg/config";
 
 export function setupProgramMetadata(
@@ -7,9 +7,9 @@ export function setupProgramMetadata(
   version: string,
 ): Command {
   return program
-    .name(chalk.bold(chalk.blueBright(_.name)))
+    .name(colors.bold(colors.cyan(_.name)))
     .version(version)
-    .description(chalk.dim(_.description));
+    .description(colors.dim(_.description));
 }
 
 export function setupProgramActions(
