@@ -3,11 +3,10 @@ import util from "util";
 import config from "@pkg/config";
 
 import type { WaavyBuildOptions } from "./types";
-import { buildBunRuntimeCommands } from "./utils/bun";
+import { buildBunRuntimeExecutable } from "./utils/bun";
 import { ensureOutDir } from "./utils/dir";
-import { buildRenderCommandPlatformExecutables } from "./utils/executable";
+import { buildWaavyPlatformExecutables } from "./utils/executable";
 import { buildExports } from "./utils/exports";
-import { buildJavascriptRuntimeCommands } from "./utils/node";
 
 import log from "./utils/log";
 
@@ -35,27 +34,20 @@ export async function build(options: WaavyBuildOptions) {
   const buildExportsPassed = await buildExports(verbose);
 
   /**
-   * Build Executables => ./out/binaries/waavy-{platform}-{target}-render
+   * Build Executables => ./out/executables/*
    */
-  const buildRenderCommandPlatformExecutablesPassed =
-    await buildRenderCommandPlatformExecutables(specificTarget, verbose);
+  const buildRenderCommandPlatformExecutablesPassed = await buildWaavyPlatformExecutables(
+    specificTarget,
+    verbose,
+  );
 
   /**
-   * Build Node Runtime Commands => ./out/commands/*.js
+   * Build Bun Runtime Commands => ./out/bun/*.js
    */
-  const buildJavascriptRuntimeCommandsPassed =
-    await buildJavascriptRuntimeCommands(verbose);
-
-  /**
-   * Build Bun Runtime Commands => ./out/commands/bun/*.js
-   */
-  const buildBunRuntimeCommandsPassed = await buildBunRuntimeCommands(verbose);
+  const buildBunRuntimeCommandsPassed = await buildBunRuntimeExecutable(verbose);
 
   const passed =
-    buildExportsPassed &&
-    buildRenderCommandPlatformExecutablesPassed &&
-    buildJavascriptRuntimeCommandsPassed &&
-    buildBunRuntimeCommandsPassed;
+    buildExportsPassed && buildRenderCommandPlatformExecutablesPassed && buildBunRuntimeCommandsPassed;
 
   const totalDuration = Math.round(performance.now() - buildStartTime);
 

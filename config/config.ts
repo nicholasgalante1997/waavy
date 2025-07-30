@@ -6,21 +6,16 @@ const __requiredDeps = Object.keys(PackageJson.dependencies);
 const __devDeps = Object.keys(PackageJson.devDependencies);
 const __outdir = path.resolve(path.join(process.cwd(), "out"));
 
-export default {
-  name: "waavy",
-  description: `A library for rendering React components in non-javascript server runtimes.
+const name = "waavy";
+const description = `A library for rendering React components in non-javascript server runtimes.\n\n\tFor more information, visit: https://github.com/nicholasgalante1997/waavy`;
 
-For more information, visit: https://github.com/nicholasgalante1997/waavy`,
+export default {
+  name,
+  description,
   build: {
     sources: {
       cli: {
-        bundle: "lib/commands/bundle.ts" as const,
-        dev: "lib/commands/dev.ts" as const,
-        help: "lib/commands/help.ts" as const,
-        prerender: "lib/commands/prerender.ts" as const,
-        render: "lib/commands/render.ts" as const,
-        ssg: "lib/commands/ssg.ts" as const,
-        upgrade: "lib/commands/upgrade.ts" as const,
+        root: "lib/index.ts",
       },
       exports: {
         server: "lib/exports/server.ts" as const,
@@ -29,14 +24,8 @@ For more information, visit: https://github.com/nicholasgalante1997/waavy`,
     },
     targets: [
       {
-        name: "waavy-linux-x64-modern",
+        name: "waavy-linux-x64",
         target: "bun-linux-x64-modern",
-        platform: "linux",
-        arch: "x64",
-      },
-      {
-        name: "waavy-linux-x64-baseline",
-        target: "bun-linux-x64-baseline",
         platform: "linux",
         arch: "x64",
       },
@@ -59,8 +48,8 @@ For more information, visit: https://github.com/nicholasgalante1997/waavy`,
         arch: "arm64",
       },
       {
-        name: "waavy-windows-x64-modern",
-        target: "bun-windows-x64-modern",
+        name: "waavy-windows-x64",
+        target: "bun-windows-x64",
         platform: "win32",
         arch: "x64",
       },
@@ -91,10 +80,8 @@ For more information, visit: https://github.com/nicholasgalante1997/waavy`,
   },
   features: {
     COMMAND_LINE_ACTIONS_BUNDLE: true,
-    COMMAND_LINE_ACTIONS_CREATE: false,
     COMMAND_LINE_ACTIONS_PRERENDER: false,
     COMMAND_LINE_ACTIONS_RENDER: true,
     COMMAND_LINE_ACTIONS_SSG: false,
-    COMMAND_LINE_ACTIONS_UPGRADE: false,
   },
 };

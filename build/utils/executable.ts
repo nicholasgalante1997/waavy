@@ -9,9 +9,9 @@ export async function buildExecutable(
   verbose = false,
 ) {
   const startTime = performance.now();
-  const outdir = path.resolve(config.build.output.directory, "bin", "render");
+  const outdir = path.resolve(config.build.output.directory, "executables");
   const external = config.build.dependencies.external;
-  const outfile = path.join(outdir, targetConfig.name + "-render");
+  const outfile = path.join(outdir, targetConfig.name);
 
   try {
     /**
@@ -24,7 +24,6 @@ export async function buildExecutable(
       "build",
       "--compile",
       "--minify",
-      "--sourcemap",
       `--target=${targetConfig.target}`,
       ...external.map((pkg) => `--external=${pkg}`),
       entrypoint,
@@ -70,7 +69,7 @@ export async function buildExecutable(
   return true;
 }
 
-export async function buildRenderCommandPlatformExecutables(
+export async function buildWaavyPlatformExecutables(
   specificTarget?: string,
   verbose = false,
 ) {
@@ -97,7 +96,7 @@ export async function buildRenderCommandPlatformExecutables(
 
   for (let i = 0; i < targets.length; i++) {
     const success = await buildExecutable(
-      config.build.sources.cli.render,
+      config.build.sources.cli.root,
       matches[i],
       verbose,
     );

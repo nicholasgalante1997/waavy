@@ -33,6 +33,9 @@ export async function buildESMOutput(options: BuildESMRuntimeOutputOptions) {
   return succeeded;
 }
 
+/**
+ * @deprecated
+ */
 export async function buildJavascriptRuntimeCommands(verbose = false) {
   /**
    * The render command cannot be run with a node runtime,

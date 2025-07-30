@@ -10,9 +10,7 @@ import { createGunzip } from "zlib";
 
 try {
   await import("dotenv/config.js");
-} catch (error) {
-  /** Fail silently */
-}
+} catch (error) {}
 
 const skipPostInstall =
   process.env.WAAVY_SKIP_POSTINSTALL === "true" ||
@@ -40,41 +38,42 @@ postinstall()
 
 async function postinstall() {
   try {
-    await downloadRenderCommandBinaries();
+    await downloadWaavyExecutable();
   } catch (error) {
     console.error("Error during post-installation:", error.message);
     process.exit(1);
   }
 }
 
-async function downloadRenderCommandBinaries() {
+async function downloadWaavyExecutable() {
   const platform = process.platform;
   const arch = process.arch;
 
   const platformMap = Object.freeze({
     linux: {
-      x64: "waavy-linux-x64-modern-render",
-      arm64: "waavy-linux-arm64-render",
+      x64: "waavy-linux-x64",
+      arm64: "waavy-linux-arm64",
     },
     darwin: {
-      x64: "waavy-macos-x64-render",
-      arm64: "waavy-macos-arm64-render",
+      x64: "waavy-macos-x64",
+      arm64: "waavy-macos-arm64",
     },
     win32: {
-      x64: "waavy-windows-x64-modern-render.exe",
+      x64: "waavy-windows-x64.exe",
     },
   });
 
-  let binaryName = platformMap[platform][arch];
+  const binaryName = platformMap[platform]?.[arch];
 
   if (!binaryName) {
     warnPlatformCompatabilityAndExit();
   }
 
-  const binDir = path.join(__dirname, "out", "bin", "render");
-  const binaryPath = path.join(binDir, binaryName);
+  const outputBinaryName = platform === "win32" ? "waavy.exe" : "waavy";
+  const outputBinaryDir = path.join(__dirname, "bin");
+  const outputBinaryPath = path.join(outputBinaryDir, outputBinaryName);
 
-  if (fs.existsSync(binaryPath)) {
+  if (fs.existsSync(outputBinaryPath)) {
     console.log("Binary already exists, skipping download!");
     return;
   }
@@ -87,13 +86,13 @@ async function downloadRenderCommandBinaries() {
   const gzippedBinaryName = `${binaryName}.gz`;
   const url = `https://github.com/nicholasgalante1997/waavy/releases/download/v${version}/${gzippedBinaryName}`;
 
-  console.log(`📦 Downloading ${gzippedBinaryName} from ${url}...`);
+  console.log(`📦 Downloading ${gzippedBinaryName} from ${url} to ${outputBinaryPath}...`);
 
   try {
-    await downloadAndDecompressFile(url, binaryPath);
+    await downloadAndDecompressFile(url, outputBinaryPath);
 
     if (platform !== "win32") {
-      fs.chmodSync(binaryPath, "755");
+      fs.chmodSync(outputBinaryPath, "755");
     }
 
     console.log(`🚀 waavy binary installed successfully!`);
@@ -158,9 +157,7 @@ async function downloadAndDecompressFile(url, binaryPath, maxRedirects = 5) {
             const bar = "█".repeat(filled) + "░".repeat(barLength - filled);
 
             // Clear line and show progress
-            process.stdout.write(
-              `\r[${bar}] ${progress}% (${speed.toFixed(1)} MB/s)`,
-            );
+            process.stdout.write(`\r[${bar}] ${progress}% (${speed.toFixed(1)} MB/s)`);
 
             lastProgress = progress;
           }

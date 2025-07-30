@@ -8,7 +8,6 @@ import log from "./log";
 
 const defaultBunOutputPath = path.resolve(
   config.build.output.directory,
-  "commands",
   "bun",
 );
 
@@ -56,32 +55,24 @@ export async function buildBunRuntimeOutput(
   return succeeded;
 }
 
-export async function buildBunRuntimeCommands(verbose = false) {
-  /**
-   * The render command cannot be run with a node runtime,
-   * it can only be run with `bun` or as a platform executable,
-   * so we only build the render command for a `bun` output format
-   */
-  const commands = Object.entries(config.build.sources.cli)
-    .filter(([key]) => key === "render")
-    .map(([, source]) => source);
+export async function buildBunRuntimeExecutable(verbose = false) {
 
-  const buildPromises = commands.map((command) =>
-    buildBunRuntimeOutput({
-      entrypoint: command,
+  try {
+    await buildBunRuntimeOutput({
+      entrypoint: config.build.sources.cli.root,
       external: config.build.dependencies.external,
-      root: "./lib/commands",
+      root: "./lib",
       verbose,
       overrides: {
-        outdir: path.resolve(config.build.output.directory, "commands", "bun"),
+        outdir: path.resolve(config.build.output.directory, "bun"),
+        throw: true,
+        minify: true
       },
-    }),
-  );
-
-  const passed = (await Promise.all(buildPromises)).reduce(
-    (prev, next) => prev && next,
-    true,
-  );
-
-  return passed;
+    });
+    return true;
+  } catch(e: unknown) {
+    console.error("An error occurred when trying to build bunRuntimeExecutables()");
+    console.error(e);
+    return false;
+  }
 }
