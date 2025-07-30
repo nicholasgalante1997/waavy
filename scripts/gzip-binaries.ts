@@ -6,20 +6,30 @@ import { createGzip } from "zlib";
 import { pipeline } from "stream/promises";
 import config from "@pkg/config";
 
+/**
+ * NOTE This delay is for the github actions runner so that the build process has time to release the file handle lock
+ */
+await Bun.sleep(1000);
+
 const log = debug("waavy:compress:gzip");
 const outdir = path.join(process.cwd(), "out", "executables");
+const executables = config.build.targets.map((t) => path.resolve(outdir, t.name));
+const start = performance.now();
 
-const executables = config.build.targets.map((t) =>
-  path.resolve(outdir, t.name),
-);
+compressRenderCommandExecutables()
+  .then(() => log("Compression completed successfully in %d ms", Math.round(performance.now() - start)))
+  .catch((error) => {
+    const err = log.extend("error");
+    err("Compression failed:", error);
+    err("Failed in %d ms", Math.round(performance.now() - start));
+    process.exit(1);
+  });
 
 async function compressRenderCommandExecutables() {
   await Promise.all(
     executables.map(async function (executable) {
       const gzip = createGzip({ level: 9, memLevel: 9 });
-      const filepath = executable.includes("windows")
-        ? executable + ".exe"
-        : executable;
+      const filepath = executable.includes("windows") ? executable + ".exe" : executable;
       const gzipPath = `${filepath}.gz`;
       const input = createReadStream(filepath);
       const output = createWriteStream(gzipPath);
@@ -27,19 +37,3 @@ async function compressRenderCommandExecutables() {
     }),
   );
 }
-
-const start = performance.now();
-
-compressRenderCommandExecutables()
-  .then(() =>
-    log(
-      "Compression completed successfully in %d ms",
-      Math.round(performance.now() - start),
-    ),
-  )
-  .catch((error) => {
-    const err = log.extend("error");
-    err("Compression failed:", error);
-    err("Failed in %d ms", Math.round(performance.now() - start));
-    process.exit(1);
-  });
