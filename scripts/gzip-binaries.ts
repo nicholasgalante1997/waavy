@@ -8,12 +8,14 @@ import { pipeline } from "stream/promises";
 import config from "@pkg/config";
 
 const MAX_FAILURES = 81;
+const WINDOWS_DELAY_IN_CI_ENV = 3 * 60 * 1000; /** 3 minutes */
 const log = debug("waavy:compress:gzip");
 const outdir = path.join(process.cwd(), "out", "executables");
 const executables = config.build.targets.map((t) => path.resolve(outdir, t.name));
 const start = performance.now();
 
 await waitForFiles()
+  .then(delayForWindowFileLockRelease)
   .then(compressRenderCommandExecutables)
   .then(() => log("Compression completed successfully in %d ms", Math.round(performance.now() - start)))
   .catch((error) => {
@@ -108,5 +110,12 @@ async function waitForFiles() {
 
   if (failures >= MAX_FAILURES) {
     throw new Error("HIT MAX FAILURE THRESHOLD");
+  }
+}
+
+async function delayForWindowFileLockRelease() {
+  const shouldDelay = process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true";
+  if (shouldDelay) {
+    await Bun.sleep(WINDOWS_DELAY_IN_CI_ENV);
   }
 }
