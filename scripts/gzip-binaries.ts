@@ -14,8 +14,9 @@ const outdir = path.join(process.cwd(), "out", "executables");
 const executables = config.build.targets.map((t) => path.resolve(outdir, t.name));
 const start = performance.now();
 
-await waitForFiles()
-  .then(delayForWindowFileLockRelease)
+await delayForWindowFileLockRelease()
+  .then(fixWindowsFilePermissions)
+  .then(waitForFiles)
   .then(compressRenderCommandExecutables)
   .then(() => log("Compression completed successfully in %d ms", Math.round(performance.now() - start)))
   .catch((error) => {
@@ -117,5 +118,33 @@ async function delayForWindowFileLockRelease() {
   const shouldDelay = process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true";
   if (shouldDelay) {
     await Bun.sleep(WINDOWS_DELAY_IN_CI_ENV);
+  }
+}
+
+// Add this function
+async function fixWindowsFilePermissions() {
+  const windowsExecutables = executables.filter((exe) => exe.includes("windows")).map((exe) => exe + ".exe");
+
+  for (const filepath of windowsExecutables) {
+    try {
+      log(`Fixing permissions for ${filepath}...`);
+
+      // Get current permissions for logging
+      const statsBefore = await stat(filepath);
+      log(`Before: mode ${statsBefore.mode.toString(8)}`);
+
+      // Force readable permissions
+      await fs.chmod(filepath, 0o644); // rw-r--r--
+
+      // Verify the change
+      const statsAfter = await stat(filepath);
+      log(`After: mode ${statsAfter.mode.toString(8)}`);
+
+      // Test if we can now access it
+      await access(filepath, fs.constants.R_OK);
+      log(`✅ Successfully fixed permissions for ${filepath}`);
+    } catch (error: unknown) {
+      log(`❌ Failed to fix permissions for ${filepath}: ${error}`);
+    }
   }
 }
