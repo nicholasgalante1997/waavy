@@ -1,10 +1,5 @@
 // @no-test
-import {
-  ComponentNotFoundError,
-  ErrorCodes,
-  InvalidExtensionError,
-  PropDataLoaderException,
-} from "@/errors";
+import { ComponentNotFoundError, ErrorCodes, InvalidExtensionError, PropDataLoaderException } from "@/errors";
 
 class ProcessManager {
   private isShuttingDown = false;
@@ -40,10 +35,7 @@ class ProcessManager {
     process.on("SIGPIPE", () => {});
   }
 
-  private async gracefulShutdown(
-    signal: string,
-    cleanupFn?: () => Promise<void>,
-  ) {
+  private async gracefulShutdown(signal: string, cleanupFn?: () => Promise<void>) {
     if (this.isShuttingDown) return;
     this.isShuttingDown = true;
 

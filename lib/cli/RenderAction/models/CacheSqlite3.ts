@@ -4,10 +4,7 @@ import fs from "fs";
 import { DEFAULT_WAAVY_RENDER_DB_CACHE } from "@/constants";
 import { createDeterministicStructure } from "@/utils";
 
-import type {
-  CacheEntry,
-  CacheEntryWithRenderOutput,
-} from "../utils/cache/types";
+import type { CacheEntry, CacheEntryWithRenderOutput } from "../utils/cache/types";
 import { sabtou8ab } from "../utils/cache/utils/buffers";
 
 import CacheEncryption from "./CacheEncryption";
@@ -91,9 +88,7 @@ export default class CacheBunSqlite3 implements IRenderCache {
   }
 
   private setupSqlite3RenderCacheIndex() {
-    this.db.exec(
-      `CREATE INDEX IF NOT EXISTS idx_created_at ON render_cache(created_at)`,
-    );
+    this.db.exec(`CREATE INDEX IF NOT EXISTS idx_created_at ON render_cache(created_at)`);
   }
 
   async find(): Promise<CacheEntryWithRenderOutput | null> {
@@ -127,13 +122,7 @@ export default class CacheBunSqlite3 implements IRenderCache {
         await CacheEncryption.encrypt(cacheableRenderOutput, this.ce.cacheKey),
       );
       const _props = await this.encryptAndSerializeProps();
-      sql.run(
-        this.ce.id,
-        sabtou8ab(_props),
-        sabtou8ab(_renderOutput),
-        this.ce.cpath,
-        this.ce.cname,
-      );
+      sql.run(this.ce.id, sabtou8ab(_props), sabtou8ab(_renderOutput), this.ce.cpath, this.ce.cname);
       return true;
     } catch (e) {}
     return false;

@@ -1,3 +1,5 @@
+import React from "react";
+
 import fs from "fs";
 import path from "path";
 
@@ -18,11 +20,7 @@ export async function pipeComponentToNamedPipe(
   const pipePath = path.relative(options.pipe!, import.meta.url);
   const writable = fs.createWriteStream(pipePath);
   try {
-    await pipeComponentToNodeStream(
-      <Component {...props} />,
-      writable,
-      renderToReadableStreamOptions,
-    );
+    await pipeComponentToNodeStream(<Component {...props} />, writable, renderToReadableStreamOptions);
   } catch (error) {
     /** Think about constructing a specific subclass of Error for this */
     throw error;

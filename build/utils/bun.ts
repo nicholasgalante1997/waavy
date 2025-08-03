@@ -6,14 +6,9 @@ import type { BuildBunRuntimeOutputOptions } from "../types";
 import { handleBunBuildOutput } from "./handler";
 import log from "./log";
 
-const defaultBunOutputPath = path.resolve(
-  config.build.output.directory,
-  "bun",
-);
+const defaultBunOutputPath = path.resolve(config.build.output.directory, "bun");
 
-export async function buildBunRuntimeOutput(
-  options: BuildBunRuntimeOutputOptions,
-) {
+export async function buildBunRuntimeOutput(options: BuildBunRuntimeOutputOptions) {
   const {
     entrypoint,
     external,
@@ -32,10 +27,7 @@ export async function buildBunRuntimeOutput(
       await fs.mkdir(outdir, { recursive: true });
     }
 
-    const defaultBuildOptions = config.build.defaultBuildOptions(
-      external,
-      outdir,
-    );
+    const defaultBuildOptions = config.build.defaultBuildOptions(external, outdir);
 
     const result = await Bun.build({
       ...defaultBuildOptions,
@@ -56,7 +48,6 @@ export async function buildBunRuntimeOutput(
 }
 
 export async function buildBunRuntimeExecutable(verbose = false) {
-
   try {
     await buildBunRuntimeOutput({
       entrypoint: config.build.sources.cli.root,
@@ -66,11 +57,11 @@ export async function buildBunRuntimeExecutable(verbose = false) {
       overrides: {
         outdir: path.resolve(config.build.output.directory, "bun"),
         throw: true,
-        minify: true
+        minify: true,
       },
     });
     return true;
-  } catch(e: unknown) {
+  } catch (e: unknown) {
     console.error("An error occurred when trying to build bunRuntimeExecutables()");
     console.error(e);
     return false;

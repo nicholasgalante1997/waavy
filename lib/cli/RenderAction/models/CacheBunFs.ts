@@ -2,10 +2,7 @@ import fs from "fs/promises";
 import path from "path";
 import { DEFAULT_WAAVY_RENDER_CACHE } from "@/constants";
 import CacheEncryption from "./CacheEncryption";
-import type {
-  CacheEntry,
-  CacheEntryWithRenderOutput,
-} from "../utils/cache/types";
+import type { CacheEntry, CacheEntryWithRenderOutput } from "../utils/cache/types";
 import type IRenderCache from "./types";
 import { createDeterministicStructure, noop } from "@/utils";
 import type { SerializableValue } from "@/types";
@@ -42,13 +39,8 @@ export default class CacheBunFs implements IRenderCache {
       for (const file of files) {
         const metadata: CacheEntryMetadata = await file.json();
         const propsEncrypted = await Bun.file(metadata?.propsOutputFile).text();
-        const propsDecrypted = JSON.parse(
-          await CacheEncryption.decrypt(propsEncrypted, this.ce.cacheKey),
-        );
-        const match = CacheUtils.compare(
-          propsDecrypted,
-          JSON.parse(this.ce.props),
-        );
+        const propsDecrypted = JSON.parse(await CacheEncryption.decrypt(propsEncrypted, this.ce.cacheKey));
+        const match = CacheUtils.compare(propsDecrypted, JSON.parse(this.ce.props));
         if (match) {
           const cachedRenderOutput = await CacheEncryption.decrypt(
             await Bun.file(metadata?.cachedRenderOutputFile)?.text(),
@@ -87,18 +79,9 @@ export default class CacheBunFs implements IRenderCache {
        *
        */
 
-      const metadataFilePath = path.resolve(
-        cacheDirpath,
-        this.ce.id + ".metadata.json",
-      );
-      const renderOutputFilePath = path.resolve(
-        cacheDirpath,
-        this.ce.id + ".cro",
-      );
-      const propsOutputFilePath = path.resolve(
-        cacheDirpath,
-        this.ce.id + ".pro",
-      );
+      const metadataFilePath = path.resolve(cacheDirpath, this.ce.id + ".metadata.json");
+      const renderOutputFilePath = path.resolve(cacheDirpath, this.ce.id + ".cro");
+      const propsOutputFilePath = path.resolve(cacheDirpath, this.ce.id + ".pro");
 
       const metadata: CacheEntryMetadata = {
         id: this.ce.id,
@@ -111,16 +94,10 @@ export default class CacheBunFs implements IRenderCache {
       };
       await Bun.write(metadataFilePath, JSON.stringify(metadata));
 
-      const encyrptedHtmlOutput = await CacheEncryption.encrypt(
-        cacheableRenderOutput,
-        this.ce.cacheKey,
-      );
+      const encyrptedHtmlOutput = await CacheEncryption.encrypt(cacheableRenderOutput, this.ce.cacheKey);
       await Bun.write(renderOutputFilePath, encyrptedHtmlOutput);
 
-      const encryptedPropsOutput = await CacheEncryption.encrypt(
-        this.ce.props,
-        this.ce.cacheKey,
-      );
+      const encryptedPropsOutput = await CacheEncryption.encrypt(this.ce.props, this.ce.cacheKey);
       await Bun.write(propsOutputFilePath, encryptedPropsOutput);
 
       return true;
@@ -137,11 +114,7 @@ export default class CacheBunFs implements IRenderCache {
   }
 
   private createCacheDirPath() {
-    return path.resolve(
-      process.cwd(),
-      DEFAULT_WAAVY_RENDER_CACHE,
-      this.hashDirName(),
-    );
+    return path.resolve(process.cwd(), DEFAULT_WAAVY_RENDER_CACHE, this.hashDirName());
   }
 
   private hashDirName() {

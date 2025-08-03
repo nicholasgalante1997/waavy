@@ -1,10 +1,7 @@
 import React from "react";
 import { hydrateRoot } from "react-dom/client";
 
-import {
-  DEFAULT_WAAVY_PROPS_CACHE_KEY,
-  DEFAULT_WAAVY_HYDRATION_SELECTOR,
-} from "@/constants";
+import { DEFAULT_WAAVY_PROPS_CACHE_KEY, DEFAULT_WAAVY_HYDRATION_SELECTOR } from "@/constants";
 
 function getWindowCacheKey(): string {
   const w = window as any;
@@ -33,8 +30,7 @@ function waavy<Props extends {} = {}>(
 ) {
   const props: Props = wprops(overrides?.pcacheKey);
   const selector = wselector(overrides?.selector);
-  const container =
-    selector === "document" ? document : document.querySelector(selector);
+  const container = selector === "document" ? document : document.querySelector(selector);
 
   if (container) {
     hydrateRoot(container, React.createElement(App, props), {

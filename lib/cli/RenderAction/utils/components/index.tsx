@@ -1,9 +1,8 @@
+import React from "react";
+
 import path from "path";
-import {
-  ComponentNotFoundError,
-  InvalidExtensionError,
-  PropDataLoaderException,
-} from "@/errors";
+
+import { ComponentNotFoundError, InvalidExtensionError, PropDataLoaderException } from "@/errors";
 import { load } from "@/utils";
 import type { LoaderFn, RenderActionOptions } from "@/types";
 
@@ -17,20 +16,15 @@ export function validateComponentExtension(pathToComponent: string) {
   }
 }
 
-/**
- * TODO figure out like what we're gonna do about this.
- */
-type ComponentType<Props> = any;
-
 export async function loadComponent<Props = {}>(
   pathToComponent: string,
   name?: string,
-): Promise<ComponentType<Props>> {
+): Promise<React.ComponentType<Props>> {
   const Component = await load(pathToComponent, name);
   if (Component == null) {
     throw new ComponentNotFoundError(pathToComponent, name || "default");
   }
-  return Component as ComponentType<Props>;
+  return Component as React.ComponentType<Props>;
 }
 
 export async function getWaavyModules(pathToFile: string) {
@@ -53,11 +47,7 @@ export async function getComponentProps<Props extends {} = {}>(
   const tprops = structuredClone(props);
 
   try {
-    props = await fetchLoaderProvProps(
-      waavyFileModules,
-      props,
-      options.request,
-    );
+    props = await fetchLoaderProvProps(waavyFileModules, props, options.request);
   } catch (e) {
     return tprops as Props;
   }
@@ -65,14 +55,10 @@ export async function getComponentProps<Props extends {} = {}>(
   return props as Props;
 }
 
-export function getPropsFromOptions(
-  options: RenderActionOptions,
-): Record<string, unknown> {
+export function getPropsFromOptions(options: RenderActionOptions): Record<string, unknown> {
   options.props ||= {};
   try {
-    return typeof options?.props === "string"
-      ? JSON.parse(options?.props)
-      : options.props;
+    return typeof options?.props === "string" ? JSON.parse(options?.props) : options.props;
   } catch (e) {
     return {};
   }
@@ -98,14 +84,8 @@ export async function fetchLoaderProvProps<Props extends {} = {}>(
   ) {
     try {
       const loader = waavyFileModules?.dataLoader as LoaderFn<typeof props>;
-      const loaderResult = await Promise.resolve(
-        await loader(request, getWaavyRenderContext()),
-      );
-      if (
-        loaderResult &&
-        loaderResult?.data &&
-        typeof loaderResult?.data === "object"
-      ) {
+      const loaderResult = await Promise.resolve(await loader(request, getWaavyRenderContext()));
+      if (loaderResult && loaderResult?.data && typeof loaderResult?.data === "object") {
         props = { ...props, ...loaderResult?.data };
       }
     } catch (e) {

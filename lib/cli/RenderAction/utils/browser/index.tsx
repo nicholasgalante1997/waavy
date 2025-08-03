@@ -1,10 +1,9 @@
-import {
-  DEFAULT_WAAVY_HYDRATION_SELECTOR,
-  DEFAULT_WAAVY_PROPS_CACHE_KEY,
-} from "@/constants";
+import React from "react";
+import { renderToString } from "react-dom/server";
+
+import { DEFAULT_WAAVY_HYDRATION_SELECTOR, DEFAULT_WAAVY_PROPS_CACHE_KEY } from "@/constants";
 import type { RenderActionOptions } from "@/types";
 import { asOptionalNumber, getVersion } from "@/utils";
-import PeerDependencyManager from "@/utils/models/PeerDependencyManager";
 import { getErrorPageMarkup } from "../errors";
 
 type CreateRenderOptionsConfig = {
@@ -28,19 +27,13 @@ export async function createRenderOptions({
   timeoutFired,
   waavyScriptContent,
 }: CreateRenderOptionsConfig) {
-  const { renderToString } = await PeerDependencyManager.useReactDOMServer();
   const renderOptions: any = {
     bootstrapModules: bootstrap,
     bootstrapScriptContent: waavyScriptContent,
     onError: (error: unknown, errorInfo: unknown) => {
       if (ErrorComponent && errorConfiguration) {
         try {
-          errorConfiguration.page = getErrorPageMarkup(
-            renderToString,
-            ErrorComponent,
-            error,
-            errorInfo,
-          );
+          errorConfiguration.page = getErrorPageMarkup(renderToString, ErrorComponent, error, errorInfo);
         } catch (e) {}
       }
     },

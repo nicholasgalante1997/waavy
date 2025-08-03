@@ -58,23 +58,15 @@ const bundleAction: BundleAction = async (options) => {
     return;
   }
 
-  await Bun.build(bunConfig).then((buildOutput) =>
-    handleBunBuildOutput(buildOutput, start, options.verbose)
-  );
+  await Bun.build(bunConfig).then((buildOutput) => handleBunBuildOutput(buildOutput, start, options.verbose));
 };
 
 function mapDirToEntryPoints(dir: string) {
   const dirents = fs.readdirSync(dir, { withFileTypes: true });
 
   return dirents
-    .filter(
-      (de) =>
-        de.isFile() &&
-        [".ts", ".tsx", ".js", ".jsx"].includes(path.extname(de.name))
-    )
-    .map((de) =>
-      path.relative(process.cwd(), path.resolve(de.parentPath, de.name))
-    );
+    .filter((de) => de.isFile() && [".ts", ".tsx", ".js", ".jsx"].includes(path.extname(de.name)))
+    .map((de) => path.relative(process.cwd(), path.resolve(de.parentPath, de.name)));
 }
 
 export default bundleAction;

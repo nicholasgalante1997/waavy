@@ -1,10 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 
-import {
-  DEFAULT_WAAVY_HYDRATION_SELECTOR,
-  DEFAULT_WAAVY_PROPS_CACHE_KEY,
-} from "@/constants";
+import { DEFAULT_WAAVY_HYDRATION_SELECTOR, DEFAULT_WAAVY_PROPS_CACHE_KEY } from "@/constants";
 import { getVersion } from "@/utils";
 
 interface BundleInlineOptions {
@@ -38,9 +35,7 @@ export default class Hydra<Props> {
     return new Hydra<Props>();
   }
 
-  static createWindowAssignmentInlineScript<Props>(
-    options: HydraWindowAssignmentScriptOptions<Props>,
-  ) {
+  static createWindowAssignmentInlineScript<Props>(options: HydraWindowAssignmentScriptOptions<Props>) {
     return `
       window.waavy = {};
       window.waavy.version = ${getVersion()};
@@ -97,19 +92,13 @@ export default class Hydra<Props> {
   async createBundle() {
     try {
       if (!this.verify()) {
-        throw new Error(
-          "Hydra must have a Component, a pathToComponent, and an extension",
-        );
+        throw new Error("Hydra must have a Component, a pathToComponent, and an extension");
       }
 
-      const template = getHydraTemplate(
-        this.pathToComponent!,
-        getNodeModulesWaavyCache(),
-        {
-          name: this.nonDefaultComponentName,
-          selector: this.selector,
-        },
-      );
+      const template = getHydraTemplate(this.pathToComponent!, getNodeModulesWaavyCache(), {
+        name: this.nonDefaultComponentName,
+        selector: this.selector,
+      });
 
       const result = await bundleInlineCode(
         template,
@@ -130,9 +119,7 @@ export default class Hydra<Props> {
           `JavaScript build failed: ${logs
             .filter((log) => log.level === "error" || log.level === "warning")
             .map((log) => log.message)
-            .join(
-              "\n",
-            )}\n\nGenerated: ${outputs.map((output) => output.path).join(", ")}`,
+            .join("\n")}\n\nGenerated: ${outputs.map((output) => output.path).join(", ")}`,
         );
       }
 
@@ -174,15 +161,9 @@ window.__WAAVY__ = ${JSON.stringify(waavyBrowserDTO)};
   }
 }
 
-function getHydraTemplate<Props>(
-  pathToComponent: string,
-  baseDir: string,
-  options: HydraTemplateOptions,
-) {
+function getHydraTemplate<Props>(pathToComponent: string, baseDir: string, options: HydraTemplateOptions) {
   const componentPath = path.relative(baseDir, pathToComponent);
-  const normalizedPath = componentPath.startsWith(".")
-    ? componentPath
-    : `./${componentPath}`;
+  const normalizedPath = componentPath.startsWith(".") ? componentPath : `./${componentPath}`;
 
   return `
 import React from 'react';
@@ -208,18 +189,12 @@ function getNodeModulesWaavyCache() {
   return path.join(process.cwd(), "node_modules", ".cache", "waavy");
 }
 
-async function getTempFileInNodeModulesCache(
-  extension: string,
-  integrityHash: string,
-) {
+async function getTempFileInNodeModulesCache(extension: string, integrityHash: string) {
   const cacheDir = getNodeModulesWaavyCache();
   if (!(await fs.exists(cacheDir))) {
     await fs.mkdir(cacheDir, { recursive: true });
   }
-  const tempFile = path.join(
-    cacheDir,
-    `hydration-${integrityHash}.${extension}`,
-  );
+  const tempFile = path.join(cacheDir, `hydration-${integrityHash}.${extension}`);
   return tempFile;
 }
 
@@ -230,10 +205,7 @@ export async function bundleInlineCode(
   cache = true,
   useCache = false,
 ): Promise<Bun.BuildOutput> {
-  const tempFile = await getTempFileInNodeModulesCache(
-    options.loader,
-    Date.now().toString(),
-  );
+  const tempFile = await getTempFileInNodeModulesCache(options.loader, Date.now().toString());
 
   try {
     await fs.writeFile(tempFile, code, "utf8");
@@ -257,18 +229,12 @@ export async function bundleInlineCode(
 
     return result;
   } catch (e) {
-    console.error(
-      "[bundleInlineCode]: An Exception was thrown during an attempt to build. %s",
-      e,
-    );
+    console.error("[bundleInlineCode]: An Exception was thrown during an attempt to build. %s", e);
     throw e;
   } finally {
     if (!cache) {
       await fs.unlink(tempFile).catch((err) => {
-        console.error(
-          "[bundleInlineCode::unlink]: Error deleting temp file:",
-          err,
-        );
+        console.error("[bundleInlineCode::unlink]: Error deleting temp file:", err);
       });
     }
   }

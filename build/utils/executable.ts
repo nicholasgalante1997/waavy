@@ -45,40 +45,28 @@ export async function buildExecutable(
       try {
         const stat = Bun.file(outfile).size;
         const sizeInMB = (stat / (1024 * 1024)).toFixed(1);
-        log(
-          `${targetConfig.platform} executable built in ${duration}ms (${sizeInMB}MB)`,
-        );
+        log(`${targetConfig.platform} executable built in ${duration}ms (${sizeInMB}MB)`);
       } catch {
         log(`${targetConfig.platform} executable built in ${duration}ms`);
       }
     } else {
-      log.extend("error")(
-        `Failed to build ${targetConfig.platform} executable (exit code: ${exitCode})`,
-      );
+      log.extend("error")(`Failed to build ${targetConfig.platform} executable (exit code: ${exitCode})`);
       const stderr = await new Response(proc.stderr).text();
       if (stderr) console.error(stderr);
       return false;
     }
   } catch (error) {
-    log.extend("error")(
-      `Failed to build ${targetConfig.platform} executable: ${error}`,
-    );
+    log.extend("error")(`Failed to build ${targetConfig.platform} executable: ${error}`);
     return false;
   }
 
   return true;
 }
 
-export async function buildWaavyPlatformExecutables(
-  specificTarget?: string,
-  verbose = false,
-) {
+export async function buildWaavyPlatformExecutables(specificTarget?: string, verbose = false) {
   const targets = config.build.targets;
   const matches = specificTarget
-    ? targets.filter(
-        (t) =>
-          t.name.includes(specificTarget) || t.target.includes(specificTarget),
-      )
+    ? targets.filter((t) => t.name.includes(specificTarget) || t.target.includes(specificTarget))
     : targets;
 
   if (matches.length === 0) {
@@ -87,19 +75,13 @@ export async function buildWaavyPlatformExecutables(
   }
 
   if (specificTarget) {
-    log(
-      `Building specific target(s): ${targets.map((t) => t.platform).join(", ")}`,
-    );
+    log(`Building specific target(s): ${targets.map((t) => t.platform).join(", ")}`);
   }
 
   let successCount = 0;
 
   for (let i = 0; i < targets.length; i++) {
-    const success = await buildExecutable(
-      config.build.sources.cli.root,
-      matches[i],
-      verbose,
-    );
+    const success = await buildExecutable(config.build.sources.cli.root, matches[i], verbose);
     if (success) successCount++;
   }
 
@@ -107,9 +89,7 @@ export async function buildWaavyPlatformExecutables(
     log(`All ${targets.length} executables built successfully!`);
     return true;
   } else {
-    log.extend("error")(
-      `${targets.length - successCount}/${targets.length} executable builds failed`,
-    );
+    log.extend("error")(`${targets.length - successCount}/${targets.length} executable builds failed`);
     return false;
   }
 }

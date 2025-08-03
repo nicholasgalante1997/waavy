@@ -62,9 +62,7 @@ export default class RenderCacheHeaderDatabase {
       if (!CacheSerializer.serializable(cacheable.props)) return false;
       const sql = this.getWriteSql();
       const id = cacheable.id;
-      const strprops = JSON.stringify(
-        createDeterministicStructure(cacheable.props as SerializableObject),
-      );
+      const strprops = JSON.stringify(createDeterministicStructure(cacheable.props as SerializableObject));
       const sprops = CacheEncryption.sha256Hash(strprops);
       sql.run(id, cacheable.cname, cacheable.cpath, sprops);
       return true;
@@ -80,9 +78,7 @@ export default class RenderCacheHeaderDatabase {
       }
       if (!CacheSerializer.serializable(cacheable.props)) return null;
       const sql = this.getReadSql();
-      const strprops = JSON.stringify(
-        createDeterministicStructure(cacheable.props as SerializableObject),
-      );
+      const strprops = JSON.stringify(createDeterministicStructure(cacheable.props as SerializableObject));
       const sprops = CacheEncryption.sha256Hash(strprops);
       const result = sql.get(cacheable.cname, cacheable.cpath, sprops);
       return result as CacheEntryHeader | null;

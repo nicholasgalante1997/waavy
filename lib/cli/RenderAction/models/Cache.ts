@@ -1,9 +1,6 @@
 import type { RenderActionOptions } from "@/types";
 
-import type {
-  CacheEntry,
-  CacheEntryWithRenderOutput,
-} from "../utils/cache/types";
+import type { CacheEntry, CacheEntryWithRenderOutput } from "../utils/cache/types";
 
 import CacheSerializer from "./CacheSerializer";
 import CacheBunFs from "./CacheBunFs";
@@ -23,8 +20,7 @@ type RenderCacheConstructorOptions = {
 };
 
 export default class RenderCache {
-  private static _hcache_db: RenderCacheHeaderDatabase =
-    new RenderCacheHeaderDatabase();
+  private static _hcache_db: RenderCacheHeaderDatabase = new RenderCacheHeaderDatabase();
 
   private type: CacheType;
   private cpath: string;
@@ -54,11 +50,7 @@ export default class RenderCache {
     );
   }
 
-  private static addToHeaderCache(
-    cpath: string,
-    cname: string,
-    props: unknown,
-  ): boolean {
+  private static addToHeaderCache(cpath: string, cname: string, props: unknown): boolean {
     try {
       return RenderCache._hcache_db.add({
         cname,
@@ -82,17 +74,10 @@ export default class RenderCache {
   async cache(renderOutput: string) {
     const cacheEntry = this.createCacheEntryWithRenderOutput(renderOutput);
     if (cacheEntry) {
-      using _cache =
-        this.type === "bunfs"
-          ? new CacheBunFs(cacheEntry)
-          : new CacheBunSqlite3(cacheEntry);
+      using _cache = this.type === "bunfs" ? new CacheBunFs(cacheEntry) : new CacheBunSqlite3(cacheEntry);
       const didCache = await _cache.cache(cacheEntry.cachedRenderOutput);
       if (didCache) {
-        RenderCache.addToHeaderCache(
-          cacheEntry.cpath,
-          cacheEntry.cname,
-          this.cprops,
-        );
+        RenderCache.addToHeaderCache(cacheEntry.cpath, cacheEntry.cname, this.cprops);
       }
     }
   }
@@ -100,10 +85,7 @@ export default class RenderCache {
   async find(): Promise<CacheEntryWithRenderOutput | null> {
     const cacheEntry = this.createCacheEntry();
     if (cacheEntry) {
-      using _cache =
-        this.type === "bunfs"
-          ? new CacheBunFs(cacheEntry)
-          : new CacheBunSqlite3(cacheEntry);
+      using _cache = this.type === "bunfs" ? new CacheBunFs(cacheEntry) : new CacheBunSqlite3(cacheEntry);
 
       const found = await _cache.find();
       if (found) return found;
@@ -111,9 +93,7 @@ export default class RenderCache {
     return null;
   }
 
-  private createCacheEntryWithRenderOutput(
-    cacheableRenderOutput: string,
-  ): CacheEntryWithRenderOutput | null {
+  private createCacheEntryWithRenderOutput(cacheableRenderOutput: string): CacheEntryWithRenderOutput | null {
     if (!CacheSerializer.serializable(this.cprops)) return null;
     const timestamp = new Date();
     const id = Bun.randomUUIDv7("hex", timestamp);

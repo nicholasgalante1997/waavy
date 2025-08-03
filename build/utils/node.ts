@@ -5,13 +5,7 @@ import log from "./log";
 import path from "path";
 
 export async function buildESMOutput(options: BuildESMRuntimeOutputOptions) {
-  const {
-    entrypoint,
-    root = "./lib",
-    target,
-    verbose = false,
-    overrides = {},
-  } = options;
+  const { entrypoint, root = "./lib", target, verbose = false, overrides = {} } = options;
   let succeeded = true;
   const startTime = performance.now();
   try {
@@ -57,10 +51,7 @@ export async function buildJavascriptRuntimeCommands(verbose = false) {
     }),
   );
 
-  const passed = (await Promise.all(buildPromises)).reduce(
-    (prev, next) => prev && next,
-    true,
-  );
+  const passed = (await Promise.all(buildPromises)).reduce((prev, next) => prev && next, true);
 
   return passed;
 }

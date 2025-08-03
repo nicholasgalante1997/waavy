@@ -11,9 +11,7 @@ export function handleBunBuildOutput(
     log(`JavaScript bundle built in ${duration}ms`);
     if (verbose) {
       output.outputs.forEach((output) => {
-        log.extend("debug")(
-          `Generated: ${output.path} (${Math.round(output.size / 1024)}KB)`,
-        );
+        log.extend("debug")(`Generated: ${output.path} (${Math.round(output.size / 1024)}KB)`);
       });
     }
   } else {

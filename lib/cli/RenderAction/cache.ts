@@ -36,11 +36,7 @@ export async function useCached(options: UseCachedOptions): Promise<boolean> {
         case OutputStrategy.StdoutString:
           return flushCachedRenderOutputToStdout(cachedRenderOutput);
         case OutputStrategy.SerializedJson:
-          return flushCachedRenderOutputToStdout(
-            cachedRenderOutput,
-            options.component.props,
-            "json",
-          );
+          return flushCachedRenderOutputToStdout(cachedRenderOutput, options.component.props, "json");
       }
     }
   }
@@ -66,9 +62,9 @@ function flushCachedRenderOutputToStdout(
   return false;
 }
 
-async function cacheRenderOutput<
-  Props extends SerializableObject = SerializableObject,
->(options: CacheRenderOutputOptions<Props>) {
+async function cacheRenderOutput<Props extends SerializableObject = SerializableObject>(
+  options: CacheRenderOutputOptions<Props>,
+) {
   const cm = new RenderCache({
     key: options.cacheKey,
     type: options.cacheType,
@@ -85,8 +81,8 @@ async function cacheRenderOutput<
   }
 }
 
-export async function writeToCache<
-  Props extends SerializableObject = SerializableObject,
->(data: CacheRenderOutputOptions<Props>) {
+export async function writeToCache<Props extends SerializableObject = SerializableObject>(
+  data: CacheRenderOutputOptions<Props>,
+) {
   await cacheRenderOutput(data);
 }

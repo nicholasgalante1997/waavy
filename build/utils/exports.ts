@@ -3,10 +3,7 @@ import log from "./log";
 import { buildESMOutput } from "./node";
 
 export async function buildExports(verbose = false) {
-  const javascriptExports = [
-    config.build.sources.exports.browser,
-    config.build.sources.exports.server,
-  ];
+  const javascriptExports = [config.build.sources.exports.browser, config.build.sources.exports.server];
   let succeeded = true;
   log("Starting javascript library module export generation...");
   for (const jsExport of javascriptExports) {

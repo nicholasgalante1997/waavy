@@ -1,12 +1,7 @@
 import React from "react";
 
 const Image = React.memo(() => (
-  <img
-    src="https://picsum.photos/200/300.webp"
-    height="200"
-    width="300"
-    alt="random image"
-  />
+  <img src="https://picsum.photos/200/300.webp" height="200" width="300" alt="random image" />
 ));
 
 const Button = React.memo(() => {
@@ -31,10 +26,7 @@ const Extended: React.FC<Props> = (props: Props) => {
   }, []);
 
   return (
-    <section
-      data-test="extended-component-example"
-      id="exteneded-component-root"
-    >
+    <section data-test="extended-component-example" id="exteneded-component-root">
       <h1>Extended Component</h1>
       <Image />
       <Button />

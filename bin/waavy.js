@@ -19,21 +19,12 @@ const __waavyd = path.dirname(__dirname);
 
 const SUPPORTED_ARCHS = Object.freeze(["x64", "arm64"]);
 const SUPPORTED_PLATFORMS = Object.freeze(["linux", "darwin", "win32"]);
-const SUPPORTED_COMMAND_LINE_ARGS = Object.freeze([
-  "bundle",
-  "help",
-  "prerender",
-  "render",
-  "ssg",
-]);
+const SUPPORTED_COMMAND_LINE_ARGS = Object.freeze(["bundle", "help", "prerender", "render", "ssg"]);
 
 const platform = process.platform;
 const arch = process.arch;
 
-if (
-  !SUPPORTED_PLATFORMS.includes(platform) ||
-  !SUPPORTED_ARCHS.includes(arch)
-) {
+if (!SUPPORTED_PLATFORMS.includes(platform) || !SUPPORTED_ARCHS.includes(arch)) {
   warnUnsupportedPlatformAndExit();
 }
 
@@ -47,7 +38,7 @@ if (!SUPPORTED_COMMAND_LINE_ARGS.includes(command)) {
 try {
   await import("react");
   await import("react-dom");
-} catch(e) {
+} catch (e) {
   warnMissingReactDepsAndExit();
 }
 
@@ -65,7 +56,7 @@ const child = child_process.spawn(execPath, process.argv.slice(2), {
     NODE_ENV: "production",
     WAAVY_BIN: execPath,
     WAAVY_ROOT: __waavyd,
-    WAAVY_VERSION: `v${pkg.version}`
+    WAAVY_VERSION: `v${pkg.version}`,
   },
 });
 

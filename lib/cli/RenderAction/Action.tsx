@@ -1,11 +1,9 @@
+import React from "react";
+
 import { handleError } from "@/errors";
-import {
-  pipeComponentToCollectedString,
-  pipeComponentToStdout,
-} from "@/server";
+import { pipeComponentToCollectedString, pipeComponentToStdout } from "@/server";
 import defaultErrorPage from "@/templates/waavy-error-page";
 import type { RenderAction, RenderActionOptions } from "@/types";
-import PeerDependencyManager from "@/utils/models/PeerDependencyManager";
 
 import { useCached, writeToCache } from "./cache";
 import {
@@ -42,11 +40,6 @@ const renderAction: RenderAction = async (componentPath, options) => {
     done: false,
   };
 
-  /**
-   * Clone by value prevents us from passing and modifying simple cloneable values in function scopes
-   * through argument passing
-   * If we want to modify values, we can pass them by reference but we need to use reference values (Objects)
-   */
   let errorConfiguration = {
     page: defaultErrorPage,
   };
@@ -56,17 +49,6 @@ const renderAction: RenderAction = async (componentPath, options) => {
     timeoutFired = false;
 
   try {
-    /**
-     * @throws
-     * This call (dynamic import) will throw if React cannot be resolved with Bun's module resolution algorithm
-     */
-    const __React = await PeerDependencyManager.useReact();
-    /**
-     * @throws
-     * This call (dynamic import) will throw if ReactDOM cannot be resolved with Bun's module resolution algorithm
-     */
-    const __ReactDOMServer = await PeerDependencyManager.useReactDOMServer();
-
     validateComponentExtension(componentPath);
 
     const cacheIsActive = cache && cacheKey && cacheType;
@@ -90,11 +72,7 @@ const renderAction: RenderAction = async (componentPath, options) => {
     }
 
     const Component = await loadComponent(componentPath, name);
-    const ErrorComponent = await getErrorComponentOrNull(
-      errorComponentPath,
-      errorComponentName,
-      options,
-    );
+    const ErrorComponent = await getErrorComponentOrNull(errorComponentPath, errorComponentName, options);
 
     const waavyScriptContent = createWindowAssignmentInlineScript({
       props,
@@ -124,11 +102,7 @@ const renderAction: RenderAction = async (componentPath, options) => {
       cacheableRenderOutput,
     );
 
-    if (
-      cacheIsActive &&
-      cacheableRenderOutput.value &&
-      cacheableRenderOutput.done
-    ) {
+    if (cacheIsActive && cacheableRenderOutput.value && cacheableRenderOutput.done) {
       try {
         await writeToCache({
           cacheKey,
@@ -200,33 +174,13 @@ async function handleRenderAndOutput(
 
   switch (options.strategy) {
     case OutputStrategy.SerializedJson:
-      return await renderToSerializedJson(
-        Component,
-        props,
-        options,
-        cacheableRenderOutput,
-      );
+      return await renderToSerializedJson(Component, props, options, cacheableRenderOutput);
     case OutputStrategy.StdoutString:
-      return await renderToMarkup(
-        Component,
-        props,
-        options,
-        cacheableRenderOutput,
-      );
+      return await renderToMarkup(Component, props, options, cacheableRenderOutput);
     case OutputStrategy.StdoutStream:
-      return await renderToStdoutStream(
-        Component,
-        props,
-        options,
-        cacheableRenderOutput,
-      );
+      return await renderToStdoutStream(Component, props, options, cacheableRenderOutput);
     case OutputStrategy.NamedPipe: {
-      await pipeComponentToNamedPipe(
-        options,
-        Component,
-        props,
-        options.renderOptions,
-      );
+      await pipeComponentToNamedPipe(options, Component, props, options.renderOptions);
       break;
     }
   }
@@ -238,10 +192,7 @@ async function renderToSerializedJson(
   options: any,
   cacheableRenderOutput: { value: string; done: boolean },
 ) {
-  const html = await pipeComponentToCollectedString(
-    <Component {...props} />,
-    options.renderOptions,
-  );
+  const html = await pipeComponentToCollectedString(<Component {...props} />, options.renderOptions);
   if (options.commandOptions.cache) {
     cacheableRenderOutput.value = html;
     cacheableRenderOutput.done = true;
@@ -255,10 +206,7 @@ async function renderToMarkup(
   options: any,
   cacheableRenderOutput: { value: string; done: boolean },
 ) {
-  const html = await pipeComponentToCollectedString(
-    <Component {...props} />,
-    options.renderOptions,
-  );
+  const html = await pipeComponentToCollectedString(<Component {...props} />, options.renderOptions);
   if (options.commandOptions.cache) {
     cacheableRenderOutput.value = html;
     cacheableRenderOutput.done = true;
@@ -279,11 +227,7 @@ async function renderToStdoutStream(
     };
     listeners.push(updateCacheableRenderOutput);
   }
-  await pipeComponentToStdout(
-    <Component {...props} />,
-    options.renderOptions,
-    listeners,
-  );
+  await pipeComponentToStdout(<Component {...props} />, options.renderOptions, listeners);
   if (options.commandOptions.cache) {
     cacheableRenderOutput.done = true;
   }

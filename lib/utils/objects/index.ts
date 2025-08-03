@@ -1,9 +1,5 @@
-export function objectIsEmpty<O extends object = {}>(
-  o: O,
-  strict = false,
-): boolean {
-  const hasNoEnumeratedProperties =
-    Object.keys(o).length === 0 && Object.values(o).length === 0;
+export function objectIsEmpty<O extends object = {}>(o: O, strict = false): boolean {
+  const hasNoEnumeratedProperties = Object.keys(o).length === 0 && Object.values(o).length === 0;
   if (!strict) return hasNoEnumeratedProperties;
   const hasNoProperties = Object.getOwnPropertyNames(o).length === 0;
   return hasNoEnumeratedProperties && hasNoProperties;

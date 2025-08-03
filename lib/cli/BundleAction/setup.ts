@@ -4,7 +4,7 @@ import path from "path";
 import Features from "@/utils/models/Features";
 
 import bundleAction from "./Action";
-import { description, command, options } from "./meta";
+import { description, command, options } from "./index.metadata";
 
 export function setupBundleAction(program: Command) {
   const enabled = Features.isEnabled("COMMAND_LINE_ACTIONS_BUNDLE");

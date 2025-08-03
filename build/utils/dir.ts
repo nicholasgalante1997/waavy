@@ -7,8 +7,6 @@ export async function ensureOutDir(outdir: string) {
     await mkdir(outdir, { recursive: true });
     log.extend("debug")(`Created output directory: ${outdir}`);
   } catch (error) {
-    log.extend("warn")(
-      `Output directory already exists or couldn't be created: ${error}`,
-    );
+    log.extend("warn")(`Output directory already exists or couldn't be created: ${error}`);
   }
 }

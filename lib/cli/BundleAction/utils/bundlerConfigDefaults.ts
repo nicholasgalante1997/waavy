@@ -8,8 +8,8 @@ export default {
   external: [],
   naming: {
     entry: "[name]-[hash].[ext]",
-    chunk: '[name]-[hash].[ext]',
-    asset: '[name]-[hash].[ext]',
+    chunk: "[name]-[hash].[ext]",
+    asset: "[name]-[hash].[ext]",
   },
   define: {
     "process.env.NODE_ENV": '"production"',

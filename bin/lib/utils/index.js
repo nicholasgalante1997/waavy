@@ -54,6 +54,8 @@ export function warnMissingReactDepsAndExit() {
 }
 
 export function warnMissingWaavyExecutableAndExit(execPath) {
-  console.error(colors.bold(colors.red("Binary not found. Try reinstalling the package. \nSearched for " + execPath)));
+  console.error(
+    colors.bold(colors.red("Binary not found. Try reinstalling the package. \nSearched for " + execPath)),
+  );
   process.exit(ErrorCodes.MissingWaavyExecutable);
 }

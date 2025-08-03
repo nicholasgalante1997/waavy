@@ -15,8 +15,7 @@ export const options = [
   },
   {
     flags: "-c, --config <file>",
-    description:
-      "A build config ts file that can be used to override default build settings.",
+    description: "A build config ts file that can be used to override default build settings.",
     default: "waavy.bundler.ts",
   },
   {
@@ -31,8 +30,7 @@ export const options = [
   },
   {
     flags: "--dry-run",
-    description:
-      "Only show what would be built, don't actually build anything.",
+    description: "Only show what would be built, don't actually build anything.",
     default: false,
   },
 ] as const;

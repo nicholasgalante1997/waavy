@@ -27,9 +27,7 @@ export enum OutputStrategy {
  * In the future, we want to support:
  * - Static Server Side Generation (Static SSG for Static React Pages)
  */
-export function getOutputStrategy(
-  options: RenderActionOptions,
-): OutputStrategy {
+export function getOutputStrategy(options: RenderActionOptions): OutputStrategy {
   if (options.serialize) return OutputStrategy.SerializedJson;
   if (options.await) return OutputStrategy.StdoutString;
   if (options.pipe) return OutputStrategy.NamedPipe;
