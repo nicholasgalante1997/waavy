@@ -6,6 +6,11 @@ export default {
   splitting: false,
   packages: "bundle" as const,
   external: [],
+  naming: {
+    entry: "[name]-[hash].[ext]",
+    chunk: '[name]-[hash].[ext]',
+    asset: '[name]-[hash].[ext]',
+  },
   define: {
     "process.env.NODE_ENV": '"production"',
   },

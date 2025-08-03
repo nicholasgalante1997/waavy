@@ -5,7 +5,7 @@ import child_process from "child_process";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { version } from "../package.json" with { type: "json" };
+import pkg from "../package.json" with { type: "json" };
 import {
   warnMissingReactDepsAndExit,
   warnMissingWaavyExecutableAndExit,
@@ -65,7 +65,7 @@ const child = child_process.spawn(execPath, process.argv.slice(2), {
     NODE_ENV: "production",
     WAAVY_BIN: execPath,
     WAAVY_ROOT: __waavyd,
-    WAAVY_VERSION: `v${version}`
+    WAAVY_VERSION: `v${pkg.version}`
   },
 });
 

@@ -82,7 +82,6 @@ async function downloadWaavyExecutable() {
     fs.mkdirSync(outputBinaryDir, { recursive: true });
   }
 
-  // Download the gzipped version
   const gzippedBinaryName = `${binaryName}.gz`;
   const url = `https://github.com/nicholasgalante1997/waavy/releases/download/v${version}/${gzippedBinaryName}`;
 
@@ -131,10 +130,7 @@ async function downloadAndDecompressFile(url, binaryPath, maxRedirects = 5) {
     let lastProgress = 0;
     const startTime = Date.now();
 
-    // Create gunzip stream
     const gunzip = createGunzip();
-
-    // Create final output stream
     const outputStream = fs.createWriteStream(binaryPath);
 
     try {
