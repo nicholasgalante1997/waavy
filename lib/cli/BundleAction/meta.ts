@@ -1,17 +1,4 @@
-export const description = `Bundle client side javascript into production assets.
-
-The "waavy" bundle command is a thin wrapper around the "bun build" api, with sane defaults for working with React.
-
-example:
-    waavy bundle # bundles ./www/src/browser => ./waavy-out
-    waavy bundle --dir ./pages # bundles ./pages => ./waavy-out
-    waavy bundle --dir ./pages --out ./out # bundles ./pages => ./out
-    waavy bundle --config ./waavy.bundler.ts --clean # bundles ./www/src/browser => ./waavy-out with merged config values from ./waavy.bundler.ts & removes ./waavy-out before building
-
-For now this is intended to be an extremely simple Bundler API wrapper, with minimal frills.
-
-For more information visit https://waavy.dev/bundler
-`;
+export const description = `Bundle client side javascript into production assets.`;
 
 export const command = "bundle";
 

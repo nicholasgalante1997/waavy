@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 
 import cac from "cac";
+import child_process from "child_process";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-
 import { version } from "../package.json" with { type: "json" };
 import {
+  warnMissingReactDepsAndExit,
+  warnMissingWaavyExecutableAndExit,
   warnUnsupportedPlatformAndExit,
   warnUnsupportedCommandAndExit,
 } from "./lib/index.js";
@@ -46,22 +48,14 @@ try {
   await import("react");
   await import("react-dom");
 } catch(e) {
-  console.warn(`[WAAVY::RUNTIME_EXCEPTION] Unable to resolve modules "react" and "react-dom" with the default module resolution algorithm!`);
-  console.warn(`waavy is not a global executable and requires a peer installation of "react" and "react-dom" to function properly.`)
-  console.error("Cannot find 'react', 'react-dom'. Are they installed locally?")
+  warnMissingReactDepsAndExit();
 }
 
-/**
- * TODO rename to just waavy or waavy.exe
- */
 const executable = platform === "win32" ? "waavy.exe" : "waavy";
 const execPath = path.join(__dirname, executable);
 
 if (!fs.existsSync(execPath)) {
-  console.error(
-    "Binary not found. Try reinstalling the package. \nSearched for " + execPath,
-  );
-  process.exit(1);
+  warnMissingWaavyExecutableAndExit(execPath);
 }
 
 const child = child_process.spawn(execPath, process.argv.slice(2), {

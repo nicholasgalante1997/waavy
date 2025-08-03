@@ -1,3 +1,6 @@
+import { ErrorCodes } from "./errors.js";
+import colors from "picocolors";
+
 export function warnUnsupportedPlatformAndExit() {
   console.error(`Unsupported platform: ${platform} ${arch}
     
@@ -14,7 +17,7 @@ export function warnUnsupportedPlatformAndExit() {
     Supported Node.js versions: 20.x, 22.x, 24.x
     Supported Bun versions: 1.x
   `);
-  process.exit(1);
+  process.exit(ErrorCodes.UnsupportedPlatformRuntimeError);
 }
 
 /**
@@ -27,14 +30,30 @@ export function warnUnsupportedCommandAndExit(command) {
     Waavy only supports the following commands:
 
     - bundle
-    - create
     - prerender
     - render
     - ssg
-    - upgrade
 
     If you are trying to run experimental or pre-release commands, please check your version to ensure they are available and supported.
   `);
 
-  process.exit(1);
+  process.exit(ErrorCodes.UnsupportedCommandRuntimeError);
+}
+
+export function warnMissingReactDepsAndExit() {
+  console.error(`
+    ${colors.red(`Missing Peer React Dependencies.`)}
+
+    ${colors.red(`Please run the following command to install them:`)}
+
+    ${colors.green(chalk.bold(`bun install react react-dom`))}
+
+    `);
+
+  process.exit(ErrorCodes.MissingReactDeps);
+}
+
+export function warnMissingWaavyExecutableAndExit(execPath) {
+  console.error(colors.bold(colors.red("Binary not found. Try reinstalling the package. \nSearched for " + execPath)));
+  process.exit(ErrorCodes.MissingWaavyExecutable);
 }

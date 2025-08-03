@@ -20,10 +20,8 @@ export function setupBundleAction(program: Command) {
     .option(options[4].flags, options[4].description, options[4].default)
     .option(options[5].flags, options[5].description, options[5].default)
     .action(async ({ config, ...options }) => {
-      console.log({ config, ...options });
-
       try {
-        const exists = await Bun.file(config).exists();
+        const exists = config && await Bun.file(config).exists();
         const ext = path.extname(config);
 
         if (exists && ext === ".ts") {

@@ -78,8 +78,8 @@ async function downloadWaavyExecutable() {
     return;
   }
 
-  if (!fs.existsSync(binDir)) {
-    fs.mkdirSync(binDir, { recursive: true });
+  if (!fs.existsSync(outputBinaryDir)) {
+    fs.mkdirSync(outputBinaryDir, { recursive: true });
   }
 
   // Download the gzipped version
