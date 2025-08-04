@@ -1,5 +1,5 @@
 import React from "react";
-import { renderToString } from "react-dom/server";
+import { renderToString, type RenderToReadableStreamOptions } from "react-dom/server";
 
 import { DEFAULT_WAAVY_HYDRATION_SELECTOR, DEFAULT_WAAVY_PROPS_CACHE_KEY } from "@/constants";
 import type { RenderActionOptions } from "@/types";
@@ -8,7 +8,7 @@ import { getErrorPageMarkup } from "../errors";
 
 type CreateRenderOptionsConfig = {
   bootstrap?: string[];
-  ErrorComponent?: any;
+  ErrorComponent?: React.ComponentType<{ error: unknown; errorInfo?: unknown } & Record<string, unknown>> | null;
   errorConfiguration?: { page: string };
   raOptions?: RenderActionOptions;
   signal?: AbortController["signal"];
@@ -27,7 +27,7 @@ export async function createRenderOptions({
   timeoutFired,
   waavyScriptContent,
 }: CreateRenderOptionsConfig) {
-  const renderOptions: any = {
+  const renderOptions: RenderToReadableStreamOptions = {
     bootstrapModules: bootstrap,
     bootstrapScriptContent: waavyScriptContent,
     onError: (error: unknown, errorInfo: unknown) => {

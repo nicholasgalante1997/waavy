@@ -43,4 +43,4 @@ export function buffersAreEqual(a: SharedArrayBuffer, b: SharedArrayBuffer): boo
 }
 
 export const serialize = (value: SerializableValue) => bun_serialize(value);
-export const deserialize = <T = any>(serialized: SharedArrayBuffer): T => bun_deserialize(serialized);
+export const deserialize = <T> (serialized: SharedArrayBuffer): T => bun_deserialize(serialized);

@@ -98,7 +98,7 @@ export default class CacheBunSqlite3 implements IRenderCache {
       const match = sql.get(sabtou8ab(_props), this.ce.cpath, this.ce.cname);
       if (match) {
         const deserializedRenderOutput = await CacheEncryption.decrypt(
-          CacheSerializer.deserialize((match as any).render_output),
+          CacheSerializer.deserialize((match as any).render_output) as any,
           this.ce.cacheKey,
         );
         return {

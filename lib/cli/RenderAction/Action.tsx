@@ -1,4 +1,5 @@
 import React from "react";
+import type { RenderToReadableStreamOptions } from "react-dom/server";
 
 import { handleError } from "@/errors";
 import { pipeComponentToCollectedString, pipeComponentToStdout } from "@/server";
@@ -136,13 +137,11 @@ const renderAction: RenderAction = async (componentPath, options) => {
   }
 };
 
-type HandleRenderAndOutputOptions = {
-  /** This needs to be a valid React component */
-  Component: any;
-  props: any;
+type HandleRenderAndOutputOptions<Props> = {
+  Component: React.ComponentType<Props>;
+  props: Props;
   commandOptions: RenderActionOptions;
-  /** This needs to be ReactDOMServer.RenderToReadableStreamOptions */
-  renderOptions: any;
+  renderOptions: RenderToReadableStreamOptions;
   strategy: OutputStrategy;
 };
 
@@ -165,11 +164,11 @@ type HandleRenderAndOutputOptions = {
  *
  * */
 
-async function handleRenderAndOutput(
-  options: HandleRenderAndOutputOptions,
+async function handleRenderAndOutput<Props extends Record<string, unknown> = {}>(
+  options: HandleRenderAndOutputOptions<Props>,
   cacheableRenderOutput: { value: string; done: boolean },
 ) {
-  const Component: any = options.Component;
+  const Component = options.Component;
   const props = options.props;
 
   switch (options.strategy) {
@@ -186,10 +185,10 @@ async function handleRenderAndOutput(
   }
 }
 
-async function renderToSerializedJson(
-  Component: any,
-  props: any,
-  options: any,
+async function renderToSerializedJson<Props extends Record<string, unknown> = {}>(
+  Component: React.ComponentType<Props>,
+  props: Props,
+  options: HandleRenderAndOutputOptions<Props>,
   cacheableRenderOutput: { value: string; done: boolean },
 ) {
   const html = await pipeComponentToCollectedString(<Component {...props} />, options.renderOptions);
@@ -200,10 +199,10 @@ async function renderToSerializedJson(
   process.stdout.write(JSON.stringify({ html, exitCode: 0, props }));
 }
 
-async function renderToMarkup(
-  Component: any,
-  props: any,
-  options: any,
+async function renderToMarkup<Props extends Record<string, unknown> = {}>(
+  Component: React.ComponentType<Props>,
+  props: Props,
+  options: HandleRenderAndOutputOptions<Props>,
   cacheableRenderOutput: { value: string; done: boolean },
 ) {
   const html = await pipeComponentToCollectedString(<Component {...props} />, options.renderOptions);
@@ -214,10 +213,10 @@ async function renderToMarkup(
   process.stdout.write(html);
 }
 
-async function renderToStdoutStream(
-  Component: any,
-  props: any,
-  options: any,
+async function renderToStdoutStream<Props extends Record<string, unknown> = {}>(
+  Component: React.ComponentType<Props>,
+  props: Props,
+  options: HandleRenderAndOutputOptions<Props>,
   cacheableRenderOutput: { value: string; done: boolean },
 ) {
   const listeners: ((chunk: string) => void | Promise<void>)[] = [];
