@@ -1,8 +1,5 @@
 import type { SerializableValue } from "@/types";
-import {
-  serialize as bun_serialize,
-  deserialize as bun_deserialize,
-} from "bun:jsc";
+import { serialize as bun_serialize, deserialize as bun_deserialize } from "bun:jsc";
 
 /**
  * Checks if props can be serialized using Bun's JSC serializer
@@ -21,10 +18,7 @@ export function serializable(props: unknown): boolean {
 /**
  * Compares two SharedArrayBuffer objects for equality by comparing their bytes
  */
-export function buffersAreEqual(
-  a: SharedArrayBuffer,
-  b: SharedArrayBuffer,
-): boolean {
+export function buffersAreEqual(a: SharedArrayBuffer, b: SharedArrayBuffer): boolean {
   if (a.byteLength !== b.byteLength) return false;
 
   const viewOfA = new DataView(a);
@@ -49,5 +43,4 @@ export function buffersAreEqual(
 }
 
 export const serialize = (value: SerializableValue) => bun_serialize(value);
-export const deserialize = <T = any>(serialized: SharedArrayBuffer): T =>
-  bun_deserialize(serialized);
+export const deserialize = <T> (serialized: SharedArrayBuffer): T => bun_deserialize(serialized);

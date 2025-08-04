@@ -2,20 +2,21 @@ import type { OutputStrategy } from "@/cli/RenderAction/utils";
 
 import ComponentNotFoundError from "./ComponentNotFound";
 import InvalidExtensionError from "./InvalidExtension";
+import MissingPeerDependencyError from "./MissingPeerDependency";
 import PropDataLoaderException from "./PropDataLoader";
 import UnserializableObjectError from "./UnserializableObjectError";
 
 export enum ErrorCodes {
-  ComponentNotFoundError = 4,
-  InvalidComponentFileExtensionError = 5,
-  PropDataLoaderThrewAnException = 6,
+  ComponentNotFoundError = 24,
+  InvalidComponentFileExtensionError = 25,
+  PropDataLoaderThrewAnException = 26,
 }
 
 export async function handleError(
   error: unknown,
   outputStrategy: OutputStrategy,
   verbose = false,
-  errorPage?: string,
+  errorConfiguration?: { page: string },
 ) {
   if (verbose) {
     /**
@@ -35,8 +36,8 @@ export async function handleError(
      * In this case, if we do have an error page, we want to report the error page string to stderr
      * if a consumer is listening to stderr, they can stream the fallback response
      */
-    if (errorPage) {
-      await handleWriteErrorPageToStdErr(errorPage);
+    if (errorConfiguration?.page) {
+      await handleWriteErrorPageToStdErr(errorConfiguration?.page);
     }
 
     throw error;
@@ -55,16 +56,16 @@ export async function handleError(
      * if a consumer is listening to stderr, they can stream the fallback response
      */
 
-    if (errorPage) {
-      await handleWriteErrorPageToStdErr(errorPage);
+    if (errorConfiguration?.page) {
+      await handleWriteErrorPageToStdErr(errorConfiguration?.page);
     }
 
     throw error;
   }
 
   if (error instanceof PropDataLoaderException) {
-    if (errorPage) {
-      await handleWriteErrorPageToStdErr(errorPage);
+    if (errorConfiguration?.page) {
+      await handleWriteErrorPageToStdErr(errorConfiguration?.page);
     }
 
     throw error;
@@ -88,6 +89,7 @@ async function handleWriteErrorPageToStdErr(errorPage: string) {
 export {
   ComponentNotFoundError,
   InvalidExtensionError,
+  MissingPeerDependencyError,
   PropDataLoaderException,
   UnserializableObjectError,
 };

@@ -15,9 +15,8 @@ const Minimal = (props) => {
       </small>
 
       <pre>
-        Why are there so many songs about rainbows? And what's on the other
-        side? Rainbows are visions, but only illusions; And rainbows have
-        nothing to hide, So I've been told, and some choose to believe it. I
+        Why are there so many songs about rainbows? And what's on the other side? Rainbows are visions, but
+        only illusions; And rainbows have nothing to hide, So I've been told, and some choose to believe it. I
         know they're wrong wait and see. One day we'll find it,
         <i>The Rainbow Connection</i>
         The lovers, the dreamers, and me.

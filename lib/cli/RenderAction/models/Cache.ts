@@ -1,9 +1,6 @@
 import type { RenderActionOptions } from "@/types";
 
-import type {
-  CacheEntry,
-  CacheEntryWithRenderOutput,
-} from "../utils/cache/types";
+import type { CacheEntry, CacheEntryWithRenderOutput } from "../utils/cache/types";
 
 import CacheSerializer from "./CacheSerializer";
 import CacheBunFs from "./CacheBunFs";
@@ -12,7 +9,7 @@ import RenderCacheHeaderDatabase from "./CacheHeaderDatabase";
 
 type CacheType = Exclude<RenderActionOptions["cacheType"], undefined>;
 
-type CacheManagerConstructorOptions = {
+type RenderCacheConstructorOptions = {
   type: CacheType;
   key: string;
   component: {
@@ -22,9 +19,8 @@ type CacheManagerConstructorOptions = {
   };
 };
 
-export default class CacheManager {
-  private static _hcache_db: RenderCacheHeaderDatabase =
-    new RenderCacheHeaderDatabase();
+export default class RenderCache {
+  private static _hcache_db: RenderCacheHeaderDatabase = new RenderCacheHeaderDatabase();
 
   private type: CacheType;
   private cpath: string;
@@ -46,7 +42,7 @@ export default class CacheManager {
     if (typeof props !== "object") return false;
 
     return Boolean(
-      CacheManager._hcache_db.find({
+      RenderCache._hcache_db.find({
         cname: cname,
         cpath: cpath,
         props: props,
@@ -54,13 +50,9 @@ export default class CacheManager {
     );
   }
 
-  private static addToHeaderCache(
-    cpath: string,
-    cname: string,
-    props: unknown,
-  ): boolean {
+  private static addToHeaderCache(cpath: string, cname: string, props: unknown): boolean {
     try {
-      return CacheManager._hcache_db.add({
+      return RenderCache._hcache_db.add({
         cname,
         cpath,
         props,
@@ -71,7 +63,7 @@ export default class CacheManager {
     }
   }
 
-  constructor(options: CacheManagerConstructorOptions) {
+  constructor(options: RenderCacheConstructorOptions) {
     this.type = options.type;
     this.cacheKey = options.key;
     this.cname = options.component.name;
@@ -82,17 +74,10 @@ export default class CacheManager {
   async cache(renderOutput: string) {
     const cacheEntry = this.createCacheEntryWithRenderOutput(renderOutput);
     if (cacheEntry) {
-      using _cache =
-        this.type === "bunfs"
-          ? new CacheBunFs(cacheEntry)
-          : new CacheBunSqlite3(cacheEntry);
+      using _cache = this.type === "bunfs" ? new CacheBunFs(cacheEntry) : new CacheBunSqlite3(cacheEntry);
       const didCache = await _cache.cache(cacheEntry.cachedRenderOutput);
       if (didCache) {
-        CacheManager.addToHeaderCache(
-          cacheEntry.cpath,
-          cacheEntry.cname,
-          this.cprops,
-        );
+        RenderCache.addToHeaderCache(cacheEntry.cpath, cacheEntry.cname, this.cprops);
       }
     }
   }
@@ -100,10 +85,7 @@ export default class CacheManager {
   async find(): Promise<CacheEntryWithRenderOutput | null> {
     const cacheEntry = this.createCacheEntry();
     if (cacheEntry) {
-      using _cache =
-        this.type === "bunfs"
-          ? new CacheBunFs(cacheEntry)
-          : new CacheBunSqlite3(cacheEntry);
+      using _cache = this.type === "bunfs" ? new CacheBunFs(cacheEntry) : new CacheBunSqlite3(cacheEntry);
 
       const found = await _cache.find();
       if (found) return found;
@@ -111,9 +93,7 @@ export default class CacheManager {
     return null;
   }
 
-  private createCacheEntryWithRenderOutput(
-    cacheableRenderOutput: string,
-  ): CacheEntryWithRenderOutput | null {
+  private createCacheEntryWithRenderOutput(cacheableRenderOutput: string): CacheEntryWithRenderOutput | null {
     if (!CacheSerializer.serializable(this.cprops)) return null;
     const timestamp = new Date();
     const id = Bun.randomUUIDv7("hex", timestamp);

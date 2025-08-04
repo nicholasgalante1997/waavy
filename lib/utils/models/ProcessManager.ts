@@ -1,10 +1,5 @@
 // @no-test
-import {
-  ComponentNotFoundError,
-  ErrorCodes,
-  InvalidExtensionError,
-  PropDataLoaderException,
-} from "@/errors";
+import { ComponentNotFoundError, ErrorCodes, InvalidExtensionError, PropDataLoaderException } from "@/errors";
 
 class ProcessManager {
   private isShuttingDown = false;
@@ -12,17 +7,6 @@ class ProcessManager {
 
   setupHandlers() {
     process.on("uncaughtException", (error: Error) => {
-      /**
-       * If telemetry is enabled, report the error
-       */
-
-      /**
-       * In a number of cases, we re-throw the error,
-       * if we consider it to be unrecoverable.
-       * We can exit with different codes
-       * for different errors.
-       */
-
       if (error instanceof ComponentNotFoundError) {
         this.forceExit(ErrorCodes.ComponentNotFoundError);
       }
@@ -39,9 +23,6 @@ class ProcessManager {
     });
 
     process.on("unhandledRejection", (reason: unknown) => {
-      /**
-       * If telemetry is enabled, report the reason for the rejected promise
-       */
       this.forceExit(9);
     });
 
@@ -54,10 +35,7 @@ class ProcessManager {
     process.on("SIGPIPE", () => {});
   }
 
-  private async gracefulShutdown(
-    signal: string,
-    cleanupFn?: () => Promise<void>,
-  ) {
+  private async gracefulShutdown(signal: string, cleanupFn?: () => Promise<void>) {
     if (this.isShuttingDown) return;
     this.isShuttingDown = true;
 
@@ -77,11 +55,6 @@ class ProcessManager {
   }
 
   private async cleanup(cleanupFn?: () => Promise<void>) {
-    /**
-     * There may be processes we want to clean up here.
-     * We'd need to share a signal with the renderer
-     * Which is fine. Can look into passing refs into this instance in a sec
-     */
     try {
       cleanupFn && (await cleanupFn());
     } catch (e) {}

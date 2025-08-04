@@ -78,9 +78,7 @@ describe("<lib/utils/object/*>", () => {
       };
 
       expect(Object.is(o1, o2)).toBe(false);
-      expect(createDeterministicStructure(o1)).toEqual(
-        createDeterministicStructure(o2),
-      );
+      expect(createDeterministicStructure(o1)).toEqual(createDeterministicStructure(o2));
     });
 
     test("it creates outputs from equal inputs that are equal", () => {

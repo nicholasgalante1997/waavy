@@ -17,20 +17,17 @@ describe("<lib/cli/RenderAction/models/CacheEncryption>", () => {
       { name: "multiline text", input: "Line 1\nLine 2\r\nLine 3\tTabbed" },
     ];
 
-    test.each(testCases)(
-      "should encrypt and decrypt $name",
-      async ({ input }) => {
-        const password = "test-password-123";
+    test.each(testCases)("should encrypt and decrypt $name", async ({ input }) => {
+      const password = "test-password-123";
 
-        const encrypted = await SecureEncryption.encrypt(input, password);
-        expect(encrypted).toBeTypeOf("string");
-        expect(encrypted.length).toBeGreaterThan(0);
-        expect(encrypted).not.toBe(input);
+      const encrypted = await SecureEncryption.encrypt(input, password);
+      expect(encrypted).toBeTypeOf("string");
+      expect(encrypted.length).toBeGreaterThan(0);
+      expect(encrypted).not.toBe(input);
 
-        const decrypted = await SecureEncryption.decrypt(encrypted, password);
-        expect(decrypted).toBe(input);
-      },
-    );
+      const decrypted = await SecureEncryption.decrypt(encrypted, password);
+      expect(decrypted).toBe(input);
+    });
 
     test("should produce different ciphertexts for same input", async () => {
       const input = "Same input text";
@@ -55,9 +52,7 @@ describe("<lib/cli/RenderAction/models/CacheEncryption>", () => {
 
       const encrypted = await SecureEncryption.encrypt(input, correctPassword);
 
-      await expect(
-        SecureEncryption.decrypt(encrypted, wrongPassword),
-      ).rejects.toThrow();
+      await expect(SecureEncryption.decrypt(encrypted, wrongPassword)).rejects.toThrow();
     });
 
     test("should fail with corrupted data", async () => {
@@ -69,18 +64,14 @@ describe("<lib/cli/RenderAction/models/CacheEncryption>", () => {
       // Corrupt the encrypted data by changing a character
       const corruptedEncrypted = encrypted.slice(0, -5) + "XXXXX";
 
-      await expect(
-        SecureEncryption.decrypt(corruptedEncrypted, password),
-      ).rejects.toThrow();
+      await expect(SecureEncryption.decrypt(corruptedEncrypted, password)).rejects.toThrow();
     });
 
     test("should fail with invalid base64", async () => {
       const password = "test-password";
       const invalidData = "not-valid-base64!@#$";
 
-      await expect(
-        SecureEncryption.decrypt(invalidData, password),
-      ).rejects.toThrow();
+      await expect(SecureEncryption.decrypt(invalidData, password)).rejects.toThrow();
     });
 
     test("should fail with truncated data", async () => {
@@ -90,9 +81,7 @@ describe("<lib/cli/RenderAction/models/CacheEncryption>", () => {
       const encrypted = await SecureEncryption.encrypt(input, password);
       const truncated = encrypted.slice(0, encrypted.length / 2);
 
-      await expect(
-        SecureEncryption.decrypt(truncated, password),
-      ).rejects.toThrow();
+      await expect(SecureEncryption.decrypt(truncated, password)).rejects.toThrow();
     });
 
     test("should handle different password types", async () => {
@@ -178,16 +167,11 @@ describe("<lib/cli/RenderAction/models/CacheEncryption>", () => {
 
     test("should handle binary-like data", async () => {
       // Create some binary-like data as string
-      const binaryLikeData = Array.from({ length: 256 }, (_, i) =>
-        String.fromCharCode(i),
-      ).join("");
+      const binaryLikeData = Array.from({ length: 256 }, (_, i) => String.fromCharCode(i)).join("");
 
       const password = "binary-test-password";
 
-      const encrypted = await SecureEncryption.encrypt(
-        binaryLikeData,
-        password,
-      );
+      const encrypted = await SecureEncryption.encrypt(binaryLikeData, password);
       const decrypted = await SecureEncryption.decrypt(encrypted, password);
 
       expect(decrypted).toBe(binaryLikeData);
