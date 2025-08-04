@@ -1,16 +1,14 @@
-import type { RenderToReadableStreamOptions } from "react-dom/server";
-import {
-  DEFAULT_WAAVY_HYDRATION_SELECTOR,
-  DEFAULT_WAAVY_PROPS_CACHE_KEY,
-} from "@/constants";
+import React from "react";
+import { renderToString, type RenderToReadableStreamOptions } from "react-dom/server";
+
+import { DEFAULT_WAAVY_HYDRATION_SELECTOR, DEFAULT_WAAVY_PROPS_CACHE_KEY } from "@/constants";
 import type { RenderActionOptions } from "@/types";
 import { asOptionalNumber, getVersion } from "@/utils";
-import PeerDependencyManager from "@/utils/models/PeerDependencyManager";
 import { getErrorPageMarkup } from "../errors";
 
 type CreateRenderOptionsConfig = {
   bootstrap?: string[];
-  ErrorComponent?: React.ComponentType<{ error: unknown }> | null;
+  ErrorComponent?: React.ComponentType<{ error: unknown; errorInfo?: unknown } & Record<string, unknown>> | null;
   errorConfiguration?: { page: string };
   raOptions?: RenderActionOptions;
   signal?: AbortController["signal"];
@@ -29,19 +27,13 @@ export async function createRenderOptions({
   timeoutFired,
   waavyScriptContent,
 }: CreateRenderOptionsConfig) {
-  const { renderToString } = await PeerDependencyManager.useReactDOMServer();
   const renderOptions: RenderToReadableStreamOptions = {
     bootstrapModules: bootstrap,
     bootstrapScriptContent: waavyScriptContent,
-    onError: (error, errorInfo) => {
+    onError: (error: unknown, errorInfo: unknown) => {
       if (ErrorComponent && errorConfiguration) {
         try {
-          errorConfiguration.page = getErrorPageMarkup(
-            renderToString,
-            ErrorComponent,
-            error,
-            errorInfo,
-          );
+          errorConfiguration.page = getErrorPageMarkup(renderToString, ErrorComponent, error, errorInfo);
         } catch (e) {}
       }
     },
@@ -66,7 +58,7 @@ export async function createRenderOptions({
     renderOptions.signal = signal;
   }
 
-  return renderOptions as RenderToReadableStreamOptions;
+  return renderOptions;
 }
 
 type HydraWindowAssignmentScriptOptions<Props> = {

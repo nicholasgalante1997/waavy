@@ -1,41 +1,35 @@
+import React from "react";
+import { renderToString, renderToReadableStream } from "react-dom/server";
 import type { WriteStream } from "fs";
 import { Readable } from "stream";
-import PeerDependencyManager from "@/utils/models/PeerDependencyManager";
 
 export async function transformComponentToString(
-  component: React.ReactElement,
-  options: ReactDOMServer.ServerOptions = {},
+  component: React.ReactNode,
+  options: Parameters<typeof renderToString>[1] = {},
 ) {
-  const React = await PeerDependencyManager.useReact();
-  const ReactDOMServer = await PeerDependencyManager.useReactDOMServer();
-  return ReactDOMServer.renderToString(component, options);
+  return renderToString(component, options);
 }
 
 export async function transformComponentToReadableStream(
-  component: React.ReactElement,
-  options: ReactDOMServer.RenderToReadableStreamOptions = {},
+  component: React.ReactNode,
+  options: Parameters<typeof renderToReadableStream>[1] = {},
 ) {
-  const React = await PeerDependencyManager.useReact();
-  const ReactDOMServer = await PeerDependencyManager.useReactDOMServer();
-  return ReactDOMServer.renderToReadableStream(component, options);
+  return renderToReadableStream(component, options);
 }
 
 export async function pipeComponent<W extends WritableStream<T>, T = any>(
-  component: React.ReactElement,
+  component: React.ReactNode,
   writable: W,
-  options: ReactDOMServer.RenderToReadableStreamOptions = {},
+  options: Parameters<typeof renderToReadableStream>[1] = {},
 ) {
   const stream = await transformComponentToReadableStream(component, options);
   await stream.pipeTo(writable);
 }
 
-/**
- * TODO look into replacing all usages of `pipeComponentToWritableCallback` with this function
- */
 export async function pipeComponentToWritableCallbacks(
-  component: React.ReactElement,
+  component: React.ReactNode,
   cbs: ((chunk: string) => void | Promise<void>)[],
-  options: ReactDOMServer.RenderToReadableStreamOptions = {},
+  options: Parameters<typeof renderToReadableStream>[1] = {},
 ) {
   const stream = await transformComponentToReadableStream(component, options);
   const reader = stream.getReader();
@@ -57,9 +51,9 @@ export async function pipeComponentToWritableCallbacks(
  * @deprecated
  */
 export async function pipeComponentToWritableCallback(
-  component: React.ReactElement,
+  component: React.ReactNode,
   cb: (chunk: string) => void,
-  options: ReactDOMServer.RenderToReadableStreamOptions = {},
+  options: Parameters<typeof renderToReadableStream>[1] = {},
 ) {
   const stream = await transformComponentToReadableStream(component, options);
   const reader = stream.getReader();
@@ -76,8 +70,8 @@ export async function pipeComponentToWritableCallback(
 }
 
 export async function pipeComponentToCollectedString(
-  component: React.ReactElement,
-  options: ReactDOMServer.RenderToReadableStreamOptions = {},
+  component: React.ReactNode,
+  options: Parameters<typeof renderToReadableStream>[1] = {},
   listeners: ((chunk: string) => void | Promise<void>)[] = [],
   init?: string,
 ) {
@@ -96,8 +90,8 @@ export async function pipeComponentToCollectedString(
 }
 
 export async function pipeComponentToStdout(
-  component: React.ReactElement,
-  options: ReactDOMServer.RenderToReadableStreamOptions = {},
+  component: React.ReactNode,
+  options: Parameters<typeof renderToReadableStream>[1] = {},
   listeners: ((chunk: string) => void | Promise<void>)[] = [],
 ) {
   await pipeComponentToWritableCallbacks(
@@ -133,14 +127,11 @@ function webStreamToNodeStream(webStream: ReadableStream): Readable {
 }
 
 export async function pipeComponentToNodeStream(
-  component: React.ReactElement,
+  component: React.ReactNode,
   nodeWriteStream: WriteStream,
-  options: ReactDOMServer.RenderToReadableStreamOptions = {},
+  options: Parameters<typeof renderToReadableStream>[1] = {},
 ) {
-  const webStream = await transformComponentToReadableStream(
-    component,
-    options,
-  );
+  const webStream = await transformComponentToReadableStream(component, options);
   const nodeReadableStream = webStreamToNodeStream(webStream);
 
   return new Promise<void>((resolve, reject) => {

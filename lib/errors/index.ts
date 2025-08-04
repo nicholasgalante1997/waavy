@@ -7,9 +7,9 @@ import PropDataLoaderException from "./PropDataLoader";
 import UnserializableObjectError from "./UnserializableObjectError";
 
 export enum ErrorCodes {
-  ComponentNotFoundError = 4,
-  InvalidComponentFileExtensionError = 5,
-  PropDataLoaderThrewAnException = 6,
+  ComponentNotFoundError = 24,
+  InvalidComponentFileExtensionError = 25,
+  PropDataLoaderThrewAnException = 26,
 }
 
 export async function handleError(

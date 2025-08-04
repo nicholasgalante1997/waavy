@@ -37,11 +37,7 @@
 
 import path from "path";
 
-import {
-  dehydrate,
-  QueryClient,
-  type UseQueryOptions,
-} from "@tanstack/react-query";
+import { dehydrate, QueryClient, type UseQueryOptions } from "@tanstack/react-query";
 
 import { load } from "@/utils";
 import type { RenderOptions } from "@/types";
@@ -55,9 +51,7 @@ type TanstackReactQueryConfig = {
   prefetch: PrefetchQueryOptions[];
 };
 
-export async function dehydrateServerSideQueries(
-  tanstackReactQueryConfig: TanstackReactQueryConfig,
-) {
+export async function dehydrateServerSideQueries(tanstackReactQueryConfig: TanstackReactQueryConfig) {
   const queryClient = new QueryClient();
   for (const query of tanstackReactQueryConfig.prefetch) {
     let queryKey = query.queryKey;
@@ -65,9 +59,7 @@ export async function dehydrateServerSideQueries(
 
     if (typeof query.queryFn === "string") {
       const resolved = path.resolve(
-        query.queryFn.startsWith("/")
-          ? query.queryFn
-          : path.join(process.cwd(), query.queryFn),
+        query.queryFn.startsWith("/") ? query.queryFn : path.join(process.cwd(), query.queryFn),
       );
       queryFn = await load(resolved);
     } else {
@@ -92,9 +84,9 @@ export async function dehydrateServerSideQueries(
   };
 }
 
-export async function extendRenderWithTanstackQueryServerSideDataFetching<
-  Props = {},
->(trqOptions: RenderOptions & { props: Props }) {
+export async function extendRenderWithTanstackQueryServerSideDataFetching<Props = {}>(
+  trqOptions: RenderOptions & { props: Props },
+) {
   const dehydratedState = await dehydrateServerSideQueries({
     prefetch: trqOptions.tanstackReactQuery?.prefetch!,
   });

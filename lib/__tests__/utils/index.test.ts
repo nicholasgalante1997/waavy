@@ -29,8 +29,7 @@ describe("<lib/utils/index.ts::[module:load]>", () => {
   });
 
   test("should load named export", async () => {
-    const testCode =
-      'export const myFunction = () => "test"; export default "default";';
+    const testCode = 'export const myFunction = () => "test"; export default "default";';
     await writeFile(testFilePath, testCode, "utf8");
     const result = await load(testFilePath, "myFunction");
     expect(typeof result).toBe("function");
@@ -38,8 +37,7 @@ describe("<lib/utils/index.ts::[module:load]>", () => {
   });
 
   test('should load default export when name is "default"', async () => {
-    const testCode =
-      'export default { value: 42 }; export const other = "other";';
+    const testCode = 'export default { value: 42 }; export const other = "other";';
     await writeFile(testFilePath, testCode, "utf8");
     const result = await load(testFilePath, "default");
     expect(result).toEqual({ value: 42 });

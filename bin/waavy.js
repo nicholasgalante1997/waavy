@@ -1,62 +1,62 @@
 #!/usr/bin/env node
+
+import cac from "cac";
 import child_process from "child_process";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import pkg from "../package.json" with { type: "json" };
+import {
+  warnMissingReactDepsAndExit,
+  warnMissingWaavyExecutableAndExit,
+  warnUnsupportedPlatformAndExit,
+  warnUnsupportedCommandAndExit,
+} from "./lib/index.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const __waavyd = path.dirname(__dirname);
 
-const SUPPORTED_PLATFORMS = ["linux", "darwin", "win32"];
-const SUPPORTED_ARCHS = ["x64", "arm64"];
+const SUPPORTED_ARCHS = Object.freeze(["x64", "arm64"]);
+const SUPPORTED_PLATFORMS = Object.freeze(["linux", "darwin", "win32"]);
+const SUPPORTED_COMMAND_LINE_ARGS = Object.freeze(["bundle", "help", "prerender", "render", "ssg"]);
 
 const platform = process.platform;
 const arch = process.arch;
 
-if (
-  !SUPPORTED_PLATFORMS.includes(platform) ||
-  !SUPPORTED_ARCHS.includes(arch)
-) {
-  console.error(`
-    Unsupported platform: ${platform} ${arch}
-    
-    Waavy only supports the following platforms:
-    - Linux (x64, arm64)
-    - macOS (x64, arm64)
-    - Windows (x64)
-
-    If you are on a different platform and you want to use waavy, please come drop a note in the GitHub repository:
-    https://github.com/nicholasgalante1997/waavy/issues/new/
-    If you are on a supported platform and still see this message, please check your Node.js version and ensure it is up to date.
-    Supported Node.js versions: 20.x, 22.x, 24.x
-    Supported Bun versions: 1.x
-    `);
-  process.exit(1);
+if (!SUPPORTED_PLATFORMS.includes(platform) || !SUPPORTED_ARCHS.includes(arch)) {
+  warnUnsupportedPlatformAndExit();
 }
 
-const binaryName =
-  "waavy-" +
-  platform +
-  "-" +
-  (arch === "x64" && platform === "linux"
-    ? "x64-modern"
-    : arch + (platform === "win32" ? ".exe" : ""));
+const programArgs = cac("waavy").parse();
+const command = programArgs.args[0] || "help";
 
-const binaryPath = path.join(__dirname, binaryName);
-
-if (!fs.existsSync(binaryPath)) {
-  console.error(
-    "Binary not found. Try reinstalling the package. \n" + binaryPath,
-  );
-  process.exit(1);
+if (!SUPPORTED_COMMAND_LINE_ARGS.includes(command)) {
+  warnUnsupportedCommandAndExit(command);
 }
 
-const child = child_process.spawn(binaryPath, process.argv.slice(2), {
+try {
+  await import("react");
+  await import("react-dom");
+} catch (e) {
+  warnMissingReactDepsAndExit();
+}
+
+const executable = platform === "win32" ? "waavy.exe" : "waavy";
+const execPath = path.join(__dirname, executable);
+
+if (!fs.existsSync(execPath)) {
+  warnMissingWaavyExecutableAndExit(execPath);
+}
+
+const child = child_process.spawn(execPath, process.argv.slice(2), {
   stdio: "inherit",
   env: {
     ...process.env,
     NODE_ENV: "production",
-    WAAVY_BIN: binaryPath,
+    WAAVY_BIN: execPath,
+    WAAVY_ROOT: __waavyd,
+    WAAVY_VERSION: `v${pkg.version}`,
   },
 });
 

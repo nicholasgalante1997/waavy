@@ -4,10 +4,7 @@ import { promisify } from "util";
 const scryptAsync = promisify(scrypt);
 
 export default class SecureEncryption {
-  private static async deriveKey(
-    password: string,
-    salt: Buffer,
-  ): Promise<Buffer> {
+  private static async deriveKey(password: string, salt: Buffer): Promise<Buffer> {
     return (await scryptAsync(password, salt, 32)) as Buffer;
   }
 
@@ -24,19 +21,11 @@ export default class SecureEncryption {
     const authTag = cipher.getAuthTag();
 
     // Combine salt, iv, authTag, and encrypted data
-    const result = Buffer.concat([
-      salt,
-      iv,
-      authTag,
-      Buffer.from(encrypted, "hex"),
-    ]);
+    const result = Buffer.concat([salt, iv, authTag, Buffer.from(encrypted, "hex")]);
     return result.toString("base64");
   }
 
-  static async decrypt(
-    encryptedData: string,
-    password: string,
-  ): Promise<string> {
+  static async decrypt(encryptedData: string, password: string): Promise<string> {
     const data = Buffer.from(encryptedData, "base64");
 
     const salt = data.subarray(0, 16);
@@ -56,10 +45,7 @@ export default class SecureEncryption {
   }
 
   public static sha256Hash(text: string) {
-    return new Bun.CryptoHasher("sha256")
-      .update(text)
-      .digest()
-      .toString("base64");
+    return new Bun.CryptoHasher("sha256").update(text).digest().toString("base64");
   }
 }
 

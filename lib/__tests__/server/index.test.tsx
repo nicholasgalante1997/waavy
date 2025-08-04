@@ -13,11 +13,7 @@ import {
   pipeComponentToNodeStream,
 } from "@/server";
 
-import {
-  SimpleComponent,
-  ComponentWithProps,
-  NestedComponent,
-} from "./components";
+import { SimpleComponent, ComponentWithProps, NestedComponent } from "./components";
 
 describe("<lib/server/index.tsx/*>", () => {
   describe("[module:transformComponentToString]", () => {
@@ -56,23 +52,17 @@ describe("<lib/server/index.tsx/*>", () => {
     test("it should pass through server options", async () => {
       // Spy on the PeerDependencyManager instead of the imported ReactDOMServer
       const mockReactDOMServer = {
-        renderToString: spyOn(ReactDOMServer, "renderToString").mockReturnValue(
-          "<div>test</div>",
-        ),
+        renderToString: spyOn(ReactDOMServer, "renderToString").mockReturnValue("<div>test</div>"),
       };
-      const peerDepSpy = spyOn(
-        PeerDependencyManager,
-        "useReactDOMServer",
-      ).mockResolvedValue(mockReactDOMServer as any);
+      const peerDepSpy = spyOn(PeerDependencyManager, "useReactDOMServer").mockResolvedValue(
+        mockReactDOMServer as any,
+      );
 
       const component = React.createElement(SimpleComponent);
       const options = { identifierPrefix: "test-" };
       await transformComponentToString(component, options);
 
-      expect(mockReactDOMServer.renderToString).toHaveBeenCalledWith(
-        component,
-        options,
-      );
+      expect(mockReactDOMServer.renderToString).toHaveBeenCalledWith(component, options);
 
       peerDepSpy.mockRestore();
       mockReactDOMServer.renderToString.mockRestore();
@@ -121,15 +111,13 @@ describe("<lib/server/index.tsx/*>", () => {
     test("it should handle streaming options", async () => {
       const mockStream = new ReadableStream();
       const mockReactDOMServer = {
-        renderToReadableStream: spyOn(
-          ReactDOMServer,
-          "renderToReadableStream",
-        ).mockResolvedValue(mockStream as any),
+        renderToReadableStream: spyOn(ReactDOMServer, "renderToReadableStream").mockResolvedValue(
+          mockStream as any,
+        ),
       };
-      const peerDepSpy = spyOn(
-        PeerDependencyManager,
-        "useReactDOMServer",
-      ).mockResolvedValue(mockReactDOMServer as any);
+      const peerDepSpy = spyOn(PeerDependencyManager, "useReactDOMServer").mockResolvedValue(
+        mockReactDOMServer as any,
+      );
 
       const component = React.createElement(SimpleComponent);
       const options = {
@@ -137,15 +125,9 @@ describe("<lib/server/index.tsx/*>", () => {
         onError: () => {},
       };
 
-      const result = await transformComponentToReadableStream(
-        component,
-        options,
-      );
+      const result = await transformComponentToReadableStream(component, options);
 
-      expect(mockReactDOMServer.renderToReadableStream).toHaveBeenCalledWith(
-        component,
-        options,
-      );
+      expect(mockReactDOMServer.renderToReadableStream).toHaveBeenCalledWith(component, options);
       expect(result).toBe(mockStream as any);
 
       peerDepSpy.mockRestore();
@@ -157,9 +139,7 @@ describe("<lib/server/index.tsx/*>", () => {
         React.createElement(
           "div",
           null,
-          Array.from({ length: 1000 }, (_, i) =>
-            React.createElement("p", { key: i }, `Item ${i}`),
-          ),
+          Array.from({ length: 1000 }, (_, i) => React.createElement("p", { key: i }, `Item ${i}`)),
         );
       const component = React.createElement(LargeComponent);
       const stream = await transformComponentToReadableStream(component);
@@ -197,27 +177,21 @@ describe("<lib/server/index.tsx/*>", () => {
         },
       });
 
-      await expect(pipeComponent(component, errorStream)).rejects.toThrow(
-        "Write failed",
-      );
+      await expect(pipeComponent(component, errorStream)).rejects.toThrow("Write failed");
     });
 
     test("it should pass options to stream creation", async () => {
       const mockStream = new ReadableStream();
-      const mockPipeTo = spyOn(mockStream, "pipeTo").mockResolvedValue(
-        undefined,
-      );
+      const mockPipeTo = spyOn(mockStream, "pipeTo").mockResolvedValue(undefined);
 
       const mockReactDOMServer = {
-        renderToReadableStream: spyOn(
-          ReactDOMServer,
-          "renderToReadableStream",
-        ).mockResolvedValue(mockStream as any),
+        renderToReadableStream: spyOn(ReactDOMServer, "renderToReadableStream").mockResolvedValue(
+          mockStream as any,
+        ),
       };
-      const peerDepSpy = spyOn(
-        PeerDependencyManager,
-        "useReactDOMServer",
-      ).mockResolvedValue(mockReactDOMServer as any);
+      const peerDepSpy = spyOn(PeerDependencyManager, "useReactDOMServer").mockResolvedValue(
+        mockReactDOMServer as any,
+      );
 
       const component = React.createElement(SimpleComponent);
       const writableStream = new WritableStream();
@@ -225,10 +199,7 @@ describe("<lib/server/index.tsx/*>", () => {
 
       await pipeComponent(component, writableStream, options);
 
-      expect(mockReactDOMServer.renderToReadableStream).toHaveBeenCalledWith(
-        component,
-        options,
-      );
+      expect(mockReactDOMServer.renderToReadableStream).toHaveBeenCalledWith(component, options);
       expect(mockPipeTo).toHaveBeenCalledWith(writableStream);
 
       peerDepSpy.mockRestore();
@@ -272,9 +243,7 @@ describe("<lib/server/index.tsx/*>", () => {
         React.createElement(
           "div",
           null,
-          Array.from({ length: 100 }, (_, i) =>
-            React.createElement("div", { key: i }, `Content ${i}`),
-          ),
+          Array.from({ length: 100 }, (_, i) => React.createElement("div", { key: i }, `Content ${i}`)),
         );
 
       const component = React.createElement(LargeComponent);
@@ -302,8 +271,7 @@ describe("<lib/server/index.tsx/*>", () => {
     });
 
     test("should decode chunks correctly", async () => {
-      const UnicodeComponent = () =>
-        React.createElement("div", null, "🚀 Hello 世界");
+      const UnicodeComponent = () => React.createElement("div", null, "🚀 Hello 世界");
       const component = React.createElement(UnicodeComponent);
       const chunks: string[] = [];
 
@@ -318,8 +286,7 @@ describe("<lib/server/index.tsx/*>", () => {
     });
 
     test("should call two separate callbacks", async () => {
-      const UnicodeComponent = () =>
-        React.createElement("div", null, "🚀 Hello 世界");
+      const UnicodeComponent = () => React.createElement("div", null, "🚀 Hello 世界");
       const component = React.createElement(UnicodeComponent);
       const chunksA: string[] = [];
       const chunksB: string[] = [];
@@ -369,9 +336,7 @@ describe("<lib/server/index.tsx/*>", () => {
       expect(stdoutWriteSpy).toHaveBeenCalled();
 
       // Verify all writes contain valid HTML
-      const allWrites = stdoutWriteSpy.mock.calls
-        .map((call: any) => call[0])
-        .join("");
+      const allWrites = stdoutWriteSpy.mock.calls.map((call: any) => call[0]).join("");
       expect(allWrites).toContain('<div class="container">');
       expect(allWrites).toContain("<h1>Title</h1>");
     });
@@ -384,9 +349,7 @@ describe("<lib/server/index.tsx/*>", () => {
       expect(stdoutWriteSpy).toHaveBeenCalled();
 
       // Verify all writes contain valid HTML
-      const allWrites = stdoutWriteSpy.mock.calls
-        .map((call: any) => call[0])
-        .join("");
+      const allWrites = stdoutWriteSpy.mock.calls.map((call: any) => call[0]).join("");
       expect(allWrites).toContain("stdout-test.js");
     });
   });
@@ -419,9 +382,9 @@ describe("<lib/server/index.tsx/*>", () => {
         },
       }) as WriteStream;
 
-      await expect(
-        pipeComponentToNodeStream(component, errorWriteStream),
-      ).rejects.toThrow("Write stream error");
+      await expect(pipeComponentToNodeStream(component, errorWriteStream)).rejects.toThrow(
+        "Write stream error",
+      );
     });
 
     test("should handle ReadableStream conversion errors", async () => {
@@ -429,15 +392,13 @@ describe("<lib/server/index.tsx/*>", () => {
 
       // Mock a failing renderToReadableStream through PeerDependencyManager
       const mockReactDOMServer = {
-        renderToReadableStream: spyOn(
-          ReactDOMServer,
-          "renderToReadableStream",
-        ).mockRejectedValue(new Error("Stream creation failed")),
+        renderToReadableStream: spyOn(ReactDOMServer, "renderToReadableStream").mockRejectedValue(
+          new Error("Stream creation failed"),
+        ),
       };
-      const peerDepSpy = spyOn(
-        PeerDependencyManager,
-        "useReactDOMServer",
-      ).mockResolvedValue(mockReactDOMServer as any);
+      const peerDepSpy = spyOn(PeerDependencyManager, "useReactDOMServer").mockResolvedValue(
+        mockReactDOMServer as any,
+      );
 
       // Create a proper mock WriteStream that implements _write
       const mockWriteStream = new Writable({
@@ -446,9 +407,9 @@ describe("<lib/server/index.tsx/*>", () => {
         },
       }) as WriteStream;
 
-      await expect(
-        pipeComponentToNodeStream(component, mockWriteStream),
-      ).rejects.toThrow("Stream creation failed");
+      await expect(pipeComponentToNodeStream(component, mockWriteStream)).rejects.toThrow(
+        "Stream creation failed",
+      );
 
       peerDepSpy.mockRestore();
       mockReactDOMServer.renderToReadableStream.mockRestore();
@@ -525,11 +486,7 @@ describe("<lib/server/index.tsx/*>", () => {
         React.createElement(
           "html",
           null,
-          React.createElement(
-            "head",
-            null,
-            React.createElement("title", null, title),
-          ),
+          React.createElement("head", null, React.createElement("title", null, title)),
           React.createElement(
             "body",
             null,
@@ -574,8 +531,7 @@ describe("<lib/server/index.tsx/*>", () => {
     });
 
     test("should maintain consistency across all rendering methods", async () => {
-      const TestComponent = () =>
-        React.createElement("div", { id: "consistency-test" }, "Test Content");
+      const TestComponent = () => React.createElement("div", { id: "consistency-test" }, "Test Content");
       const component = React.createElement(TestComponent);
 
       // Get string version
@@ -604,11 +560,7 @@ describe("<lib/server/index.tsx/*>", () => {
         if (depth === 0) {
           return React.createElement("span", null, "Deep");
         }
-        return React.createElement(
-          "div",
-          null,
-          createNestedComponent(depth - 1),
-        );
+        return React.createElement("div", null, createNestedComponent(depth - 1));
       };
 
       const deepComponent = createNestedComponent(50);
@@ -623,9 +575,7 @@ describe("<lib/server/index.tsx/*>", () => {
         React.createElement(
           "div",
           null,
-          ...Array.from({ length: 100 }, (_, i) =>
-            React.createElement("span", { key: i }, `Child ${i}`),
-          ),
+          ...Array.from({ length: 100 }, (_, i) => React.createElement("span", { key: i }, `Child ${i}`)),
         );
 
       const component = React.createElement(ManyChildrenComponent);

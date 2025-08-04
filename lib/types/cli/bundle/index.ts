@@ -1,11 +1,10 @@
 export type BundleOptions = {
   dir?: string;
-  file?: string;
   out?: string;
   clean?: boolean;
-  configuration?: Partial<Bun.BuildConfig>;
+  config?: Partial<Bun.BuildConfig>;
+  verbose?: boolean;
+  dryRun?: boolean;
 };
 
-export type BundleAction = (
-  options: Omit<BundleOptions, "configuration">,
-) => Promise<void>;
+export type BundleAction = (options: BundleOptions) => Promise<void>;
