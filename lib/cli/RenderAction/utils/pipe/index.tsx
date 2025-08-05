@@ -1,6 +1,5 @@
 import React from "react";
-import { type RenderToReadableStreamOptions } from "react-dom/server"
-
+import type { RenderToReadableStreamOptions } from "react-dom/server";
 import fs from "fs";
 import path from "path";
 

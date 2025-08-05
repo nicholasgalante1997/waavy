@@ -81,7 +81,7 @@ const renderAction: RenderAction = async (componentPath, options) => {
       selector,
     });
 
-    const renderOptions = await createRenderOptions({
+    const renderOptions = createRenderOptions({
       bootstrap,
       ErrorComponent,
       errorConfiguration,

@@ -17,7 +17,7 @@ type CreateRenderOptionsConfig = {
   waavyScriptContent?: string;
 };
 
-export async function createRenderOptions({
+export function createRenderOptions({
   bootstrap,
   ErrorComponent,
   errorConfiguration,
