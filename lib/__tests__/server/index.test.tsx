@@ -19,7 +19,7 @@ describe("<lib/server/index.tsx/*>", () => {
   describe("[module:transformComponentToString]", () => {
     test("it should render simple component to string", async () => {
       const component = React.createElement(SimpleComponent);
-      const result = await transformComponentToString(component);
+      const result = transformComponentToString(component);
       expect(typeof result).toBe("string");
       expect(result).toContain('<div id="test">Hello World</div>');
     });
@@ -29,14 +29,14 @@ describe("<lib/server/index.tsx/*>", () => {
         name: "John",
         age: 25,
       });
-      const result = await transformComponentToString(component);
+      const result = transformComponentToString(component);
       expect(result).toBe("<div>Hello John, age 25</div>");
       expect(result).toContain("Hello John, age 25");
     });
 
     test("it should render nested components to string", async () => {
       const component = React.createElement(NestedComponent);
-      const result = await transformComponentToString(component);
+      const result = transformComponentToString(component);
       expect(result).toContain('<div class="container">');
       expect(result).toContain("<h1>Title</h1>");
       expect(result).toContain("<p>Content</p>");
@@ -45,7 +45,7 @@ describe("<lib/server/index.tsx/*>", () => {
     test("it should handle empty component", async () => {
       const EmptyComponent = () => false;
       const component = React.createElement(EmptyComponent);
-      const result = await transformComponentToString(component);
+      const result = transformComponentToString(component);
       expect(result).toBe("");
     });
 
@@ -60,7 +60,7 @@ describe("<lib/server/index.tsx/*>", () => {
 
       const component = React.createElement(SimpleComponent);
       const options = { identifierPrefix: "test-" };
-      await transformComponentToString(component, options);
+      transformComponentToString(component, options);
 
       expect(mockReactDOMServer.renderToString).toHaveBeenCalledWith(component, options);
 
@@ -78,7 +78,7 @@ describe("<lib/server/index.tsx/*>", () => {
         );
 
       const component = React.createElement(FragmentComponent);
-      const result = await transformComponentToString(component);
+      const result = transformComponentToString(component);
 
       expect(result).toContain("<span>First</span>");
       expect(result).toContain("<span>Second</span>");
@@ -510,7 +510,7 @@ describe("<lib/server/index.tsx/*>", () => {
       });
 
       // Test string rendering
-      const stringResult = await transformComponentToString(component);
+      const stringResult = transformComponentToString(component);
       expect(stringResult).toContain("<title>Test Page</title>");
       expect(stringResult).toContain("<h1>Welcome</h1>");
 
@@ -535,7 +535,7 @@ describe("<lib/server/index.tsx/*>", () => {
       const component = React.createElement(TestComponent);
 
       // Get string version
-      const stringResult = await transformComponentToString(component);
+      const stringResult = transformComponentToString(component);
 
       // Get stream version via callback
       const streamChunks: string[] = [];
@@ -564,7 +564,7 @@ describe("<lib/server/index.tsx/*>", () => {
       };
 
       const deepComponent = createNestedComponent(50);
-      const result = await transformComponentToString(deepComponent);
+      const result = transformComponentToString(deepComponent);
 
       expect(result).toContain("<span>Deep</span>");
       expect((result.match(/<div>/g) || []).length).toBe(50);
@@ -579,7 +579,7 @@ describe("<lib/server/index.tsx/*>", () => {
         );
 
       const component = React.createElement(ManyChildrenComponent);
-      const result = await transformComponentToString(component);
+      const result = transformComponentToString(component);
 
       expect(result).toContain("Child 0");
       expect(result).toContain("Child 99");
@@ -596,7 +596,7 @@ describe("<lib/server/index.tsx/*>", () => {
         );
 
       const component = React.createElement(SpecialCharsComponent);
-      const result = await transformComponentToString(component);
+      const result = transformComponentToString(component);
 
       // React should escape these properly
       expect(result).toContain("&lt;&gt;&amp;");

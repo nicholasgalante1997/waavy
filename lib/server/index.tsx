@@ -3,7 +3,7 @@ import { renderToString, renderToReadableStream } from "react-dom/server";
 import type { WriteStream } from "fs";
 import { Readable } from "stream";
 
-export async function transformComponentToString(
+export function transformComponentToString(
   component: React.ReactNode,
   options: Parameters<typeof renderToString>[1] = {},
 ) {
