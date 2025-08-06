@@ -64,7 +64,6 @@ export type RenderOptions = {
   };
 };
 
-// Exclude functions, undefined, symbols, and other non-serializable values
 export type SerializableValue = string | number | boolean | null | SerializableObject | SerializableArray;
 
 export interface SerializableObject {
@@ -84,3 +83,5 @@ export type Serializable<T> = {
           ? Serializable<T[K]>
           : T[K];
 };
+
+

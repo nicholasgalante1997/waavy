@@ -2,6 +2,7 @@ import debug from "debug";
 import fs from "fs";
 import { access, constants, stat } from "fs/promises";
 import path from "path";
+import { inspect } from "util";
 
 import { type BundleAction } from "@/types/cli/bundle";
 import defaults from "./utils/bundlerConfigDefaults";
@@ -11,8 +12,6 @@ const verboseNamespace = "waavy:bundler:verbose";
 const verbose = debug(verboseNamespace);
 
 const bundleAction: BundleAction = async (options) => {
-  console.log("Bundling...");
-
   if (options.verbose) {
     debug.enable(verboseNamespace);
   }
@@ -31,7 +30,8 @@ const bundleAction: BundleAction = async (options) => {
       throw new Error(`Input directory "${input}" is not a directory.`);
     }
   } catch (e) {
-    throw new Error(`Input directory "${input}" does not exist.`);
+    if (e instanceof Error) throw e;
+    else throw new Error(`Input directory "${input}" does not exist.`);
   }
 
   const entrypoints = mapDirToEntryPoints(input);
@@ -49,7 +49,7 @@ const bundleAction: BundleAction = async (options) => {
     ...options.config,
   };
 
-  verbose(`Bun config: ${JSON.stringify(bunConfig, null, 2)}`);
+  verbose(`Bun config: ${inspect(bunConfig, false, 3, true)}`);
 
   if (options.dryRun) {
     for (const entrypoint of entrypoints) {

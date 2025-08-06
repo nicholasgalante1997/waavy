@@ -33,11 +33,17 @@ export async function useCached(options: UseCachedOptions): Promise<boolean> {
       const { cachedRenderOutput } = ce;
       switch (options.output) {
         case OutputStrategy.StdoutStream:
-        case OutputStrategy.StdoutString:
-          return flushCachedRenderOutputToStdout(cachedRenderOutput);
-        case OutputStrategy.SerializedJson:
-          return flushCachedRenderOutputToStdout(cachedRenderOutput, options.component.props, "json");
+        case OutputStrategy.StdoutString: {
+          flushCachedRenderOutputToStdout(cachedRenderOutput);
+          break;
+        }
+        case OutputStrategy.SerializedJson: {
+          flushCachedRenderOutputToStdout(cachedRenderOutput, options.component.props, "json");
+          break;
+        }
       }
+
+      return true;
     }
   }
 
@@ -51,15 +57,13 @@ function flushCachedRenderOutputToStdout(
 ) {
   if (formatting === "default") {
     process.stdout.write(cached);
-    return true;
-  }
-
-  if (formatting === "json") {
+  } else if (formatting === "json") {
     process.stdout.write(JSON.stringify({ html: cached, exitCode: 0, props }));
-    return true;
   }
 
-  return false;
+  if (process.stdout.writableNeedDrain) {
+    process.stdout.emit("drain");
+  }
 }
 
 async function cacheRenderOutput<Props extends SerializableObject = SerializableObject>(

@@ -1,10 +1,14 @@
 import { type Command } from "commander";
 import path from "path";
+import colors from "picocolors";
 
 import Features from "@/utils/models/Features";
 
 import bundleAction from "./Action";
 import { description, command, options } from "./index.metadata";
+
+// https://tldp.org/LDP/abs/html/exitcodes.html
+const WAAVY_BUNDLE_EXIT_CODE = 1 as const;
 
 export function setupBundleAction(program: Command) {
   const enabled = Features.isEnabled("COMMAND_LINE_ACTIONS_BUNDLE");
@@ -14,22 +18,30 @@ export function setupBundleAction(program: Command) {
   cmd.action(async ({ config, ...options }) => {
     try {
       const exists = config && (await Bun.file(config).exists());
-      const ext = path.extname(config);
-
-      if (exists && ext === ".ts") {
-        try {
-          const overrides = (await import(config).then((m) => m?.default)) || {};
-          options.config = overrides;
-        } catch (e) {
+      if (exists) {
+        const ext = path.extname(config);
+        if (ext === ".ts" || ext === ".js" || ext === ".mjs" || ext === ".cjs") {
+          try {
+            const overrides = (await import(config).then((m) => m?.default)) || {};
+            options.config = overrides;
+          } catch (e) {
+            options.config = {};
+          }
+        } else if (ext === ".json") {
+          try {
+            options.config = (await Bun.file(config).json()) || {};
+          } catch(e) {
+            options.config = {};
+          }
+        } else {
           options.config = {};
         }
-      } else if (exists && ext === ".json") {
-        options.config = (await Bun.file(config).json()) || {};
-      } else {
-        options.config = {};
       }
 
       await bundleAction({ ...options });
-    } catch (e) {}
+    } catch (e) {
+      console.error(colors.bold(colors.red(`"waavy bundle" failed, the following error was thrown\n\n\t${e}`)));
+      process.exit(WAAVY_BUNDLE_EXIT_CODE);
+    }
   });
 }
