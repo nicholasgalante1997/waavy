@@ -1,17 +1,15 @@
 import React from "react";
-import type { RenderToReadableStreamOptions } from "react-dom/server";
-import {
-  DEFAULT_WAAVY_HYDRATION_SELECTOR,
-  DEFAULT_WAAVY_PROPS_CACHE_KEY,
-} from "@/constants";
+import { renderToString, type RenderToReadableStreamOptions } from "react-dom/server";
+
+import { DEFAULT_WAAVY_HYDRATION_SELECTOR, DEFAULT_WAAVY_PROPS_CACHE_KEY } from "@/constants";
 import type { RenderActionOptions } from "@/types";
-import { asOptionalNumber, getVersion, logger } from "@/utils";
+import { asOptionalNumber, getVersion } from "@/utils";
 import { getErrorPageMarkup } from "../errors";
 
 type CreateRenderOptionsConfig = {
   bootstrap?: string[];
-  ErrorComponent?: React.ComponentType<{ error: unknown }> | null;
-  errorPage?: string;
+  ErrorComponent?: React.ComponentType<{ error: unknown; errorInfo?: unknown } & Record<string, unknown>> | null;
+  errorConfiguration?: { page: string };
   raOptions?: RenderActionOptions;
   signal?: AbortController["signal"];
   timeout?: NodeJS.Timeout;
@@ -22,29 +20,20 @@ type CreateRenderOptionsConfig = {
 export function createRenderOptions({
   bootstrap,
   ErrorComponent,
-  errorPage,
+  errorConfiguration,
   raOptions,
   signal,
   timeout,
   timeoutFired,
   waavyScriptContent,
 }: CreateRenderOptionsConfig) {
-  /**
-   * 6. Create renderOptions that will be used to configure the ReactDOM render behavior
-   */
   const renderOptions: RenderToReadableStreamOptions = {
     bootstrapModules: bootstrap,
     bootstrapScriptContent: waavyScriptContent,
-    onError(error, errorInfo) {
-      if (raOptions?.verbose) {
-        logger.extend("error")(
-          "An error was thrown during server side rendering",
-        );
-      }
-
-      if (ErrorComponent) {
+    onError: (error: unknown, errorInfo: unknown) => {
+      if (ErrorComponent && errorConfiguration) {
         try {
-          errorPage = getErrorPageMarkup(ErrorComponent, error, errorInfo);
+          errorConfiguration.page = getErrorPageMarkup(renderToString, ErrorComponent, error, errorInfo);
         } catch (e) {}
       }
     },
@@ -59,9 +48,6 @@ export function createRenderOptions({
   const timeoutDuration = asOptionalNumber(raOptions?.maxTimeout);
   if (!!timeoutDuration) {
     const controller = new AbortController();
-    /**
-     * We request maxTimeout in seconds
-     */
     const duration = timeoutDuration * 1000;
     timeout = setTimeout(() => {
       controller.abort();
@@ -72,7 +58,7 @@ export function createRenderOptions({
     renderOptions.signal = signal;
   }
 
-  return renderOptions as RenderToReadableStreamOptions;
+  return renderOptions;
 }
 
 type HydraWindowAssignmentScriptOptions<Props> = {

@@ -1,19 +1,12 @@
 import React from "react";
+import type { RenderToReadableStreamOptions } from "react-dom/server";
 
 import { handleError } from "@/errors";
-import {
-  pipeComponentToCollectedString,
-  pipeComponentToStdout,
-} from "@/server";
+import { pipeComponentToCollectedString, pipeComponentToStdout } from "@/server";
 import defaultErrorPage from "@/templates/waavy-error-page";
-import type { RenderAction } from "@/types";
-import {
-  WorkerMessageDataAction,
-  type CacheRenderOutputMessagePayload,
-} from "@/types/worker";
-import { createWorkerMessageData } from "@/workers";
+import type { RenderAction, RenderActionOptions } from "@/types";
 
-import CacheManager from "./models/CacheManager";
+import { useCached, writeToCache } from "./cache";
 import {
   createRenderOptions,
   createWindowAssignmentInlineScript,
@@ -26,11 +19,13 @@ import {
   validateComponentExtension,
 } from "./utils";
 
-const renderAction: RenderAction = async (pathToComponent, options, wm) => {
+const renderAction: RenderAction = async (componentPath, options) => {
+  const strategy = getOutputStrategy(options);
+
   const {
     await: _await = false,
-    bootstrap,
-    cache = false,
+    bootstrap = [],
+    cache,
     cacheKey,
     cacheType,
     errorComponentName,
@@ -41,60 +36,44 @@ const renderAction: RenderAction = async (pathToComponent, options, wm) => {
     verbose = false,
   } = options;
 
-  const strategy = getOutputStrategy(options);
-  let cacheableRenderOutput: string | null = null;
-  let errorPage = defaultErrorPage;
+  let cacheableRenderOutput: { value: string; done: false } = {
+    value: "",
+    done: false,
+  };
+
+  let errorConfiguration = {
+    page: defaultErrorPage,
+  };
+
   let signal,
     timeout,
     timeoutFired = false;
 
   try {
-    validateComponentExtension(pathToComponent);
+    validateComponentExtension(componentPath);
 
-    const props = await getComponentProps(pathToComponent, options);
+    const cacheIsActive = cache && cacheKey && cacheType;
+    const props = await getComponentProps(componentPath, options);
 
-    if (cache && cacheKey && cacheType) {
-      const hasCached = CacheManager.isInCache(pathToComponent, name, props);
-
-      if (hasCached) {
-        const cm = new CacheManager({
+    if (cacheIsActive) {
+      const useCachedOptions = {
+        cache: {
           key: cacheKey,
           type: cacheType,
-          component: {
-            name,
-            path: pathToComponent,
-            props,
-          },
-        });
-        const ce = await cm.find();
-        if (ce) {
-          const { cachedRenderOutput } = ce;
-          switch (strategy) {
-            case OutputStrategy.StdoutStream:
-            case OutputStrategy.StdoutString:
-              !process.stdout.write(cachedRenderOutput) &&
-                process.stdout.emit("drain");
-              return;
-            case OutputStrategy.SerializedJson:
-              !process.stdout.write(
-                JSON.stringify({
-                  html: cacheableRenderOutput,
-                  exitCode: 0,
-                  props,
-                }),
-              );
-              return;
-          }
-        }
-      }
+        },
+        component: {
+          name,
+          props,
+          path: componentPath,
+        },
+        output: strategy,
+      };
+      const didUseCached = await useCached(useCachedOptions);
+      if (didUseCached) return;
     }
 
-    const Component = await loadComponent(pathToComponent, name);
-    const ErrorComponent = await getErrorComponentOrNull(
-      errorComponentPath,
-      errorComponentName,
-      options,
-    );
+    const Component = await loadComponent(componentPath, name);
+    const ErrorComponent = await getErrorComponentOrNull(errorComponentPath, errorComponentName, options);
 
     const waavyScriptContent = createWindowAssignmentInlineScript({
       props,
@@ -105,7 +84,7 @@ const renderAction: RenderAction = async (pathToComponent, options, wm) => {
     const renderOptions = createRenderOptions({
       bootstrap,
       ErrorComponent,
-      errorPage,
+      errorConfiguration,
       raOptions: options,
       signal,
       timeout,
@@ -113,132 +92,33 @@ const renderAction: RenderAction = async (pathToComponent, options, wm) => {
       waavyScriptContent,
     });
 
-    /**
-     * From this point on,
-     * we commit to an OutputStrategy,
-     *
-     * If that render for that given OutputStrategy fails during AppShell Render,
-     * and an error is thrown,
-     * both the renderOptions#onError callback will fire,
-     * AND the catch block will fire.
-     * @see https://react.dev/reference/react-dom/server/renderToReadableStream#recovering-from-errors-inside-the-shell
-     *
-     * However, if the render of the AppShell succeeds,
-     * and an error is thrown in a subsequent part of the render cycle, (Streaming more content as it loads)
-     * React will fail almost silently and default to client side rendering
-     * In this case the server onError will fire,
-     * but the catch block will not fire and rendering will attempt to continue.
-     * @see https://react.dev/reference/react-dom/server/renderToReadableStream#recovering-from-errors-outside-the-shell
-     *
-     * Caching
-     *
-     * Caching can be enabled by passing the `--cache` flag.
-     *
-     * If you enable caching, Waavy will use a combination of the
-     *
-     * - path to the Component
-     * - the name of the Component
-     * - props
-     *
-     * to create a serialized cache entry after rendering the Component.
-     *
-     * On subsequent requests to render that Component,
-     *
-     * Waavy will check the cache and if an entry exists with equal props,
-     * it will stream the cached render output instead of re-rendering the page.
-     *
-     * You should only use this if your React Component Pages are pure functions.
-     *
-     * Waavy has two approaches to caching.
-     *
-     * 1. Local File System Caching (bunfs)
-     *
-     * If you want us to cache the file, and you choose the `bunfs` option,
-     *
-     * - we will create a directory under node_modules/.cache/waavy
-     * - we will create a CacheEntry object
-     * - we will write the CacheEntry object to a directory under node_modules/.cache/waavy/hash-of-path-and-component-name/uuid.json
-     *
-     * And then on subsequent renders, we will check node_modules/.cache/waavy/hash-of-path-and-component-name/
-     *
-     * and compare props to provided props, and if we match, we will return the rendered output.
-     *
-     * 2. Local File System Database (bunsqlite3)
-     *
-     * If you want us to cache the file, and you choose the `bunsqlite3` option,
-     *
-     *
-     */
-    switch (strategy) {
-      case OutputStrategy.SerializedJson: {
-        const html = await pipeComponentToCollectedString(
-          <Component {...props} />,
-          renderOptions,
-        );
-        if (cache) {
-          cacheableRenderOutput = html;
-        }
-        process.stdout.write(JSON.stringify({ html, exitCode: 0, props }));
-        break;
-      }
-      case OutputStrategy.StdoutString: {
-        const html = await pipeComponentToCollectedString(
-          <Component {...props} />,
-          renderOptions,
-        );
-        if (cache) {
-          cacheableRenderOutput = html;
-        }
-        process.stdout.write(html);
-        break;
-      }
-      case OutputStrategy.StdoutStream: {
-        if (cache) {
-          const updateCacheableRenderOutput = (chunk: string) => {
-            if (cacheableRenderOutput == null) cacheableRenderOutput = "";
-            cacheableRenderOutput += chunk;
-          };
-          const listeners = [updateCacheableRenderOutput];
-          await pipeComponentToStdout(
-            <Component {...props} />,
-            renderOptions,
-            listeners,
-          );
-        } else {
-          await pipeComponentToStdout(<Component {...props} />, renderOptions);
-        }
-        break;
-      }
-      case OutputStrategy.NamedPipe: {
-        await pipeComponentToNamedPipe(
-          options,
-          Component,
-          props,
-          renderOptions,
-        );
-        break;
-      }
-    }
+    await handleRenderAndOutput(
+      {
+        Component,
+        props,
+        commandOptions: options,
+        renderOptions,
+        strategy,
+      },
+      cacheableRenderOutput,
+    );
 
-    if (cache && cacheType && cacheKey && cacheableRenderOutput) {
-      const worker = wm.createWorker();
-      const message = createWorkerMessageData<CacheRenderOutputMessagePayload>(
-        WorkerMessageDataAction.Cache,
-        {
-          cachedRenderOutput: cacheableRenderOutput,
+    if (cacheIsActive && cacheableRenderOutput.value && cacheableRenderOutput.done) {
+      try {
+        await writeToCache({
           cacheKey,
           cacheType,
-          cname: name,
-          cpath: pathToComponent,
-          props,
-        },
-      );
-      worker.postMessage(message);
+          component: {
+            cacheableRenderOutput: cacheableRenderOutput.value,
+            name,
+            path: componentPath,
+            props,
+          },
+        });
+      } catch (e) {}
     }
-
-    return;
   } catch (error) {
-    handleError(error, strategy, verbose, errorPage);
+    handleError(error, strategy, verbose, errorConfiguration);
   } finally {
     if (signal && !timeoutFired && typeof timeout !== "undefined") {
       try {
@@ -256,5 +136,100 @@ const renderAction: RenderAction = async (pathToComponent, options, wm) => {
     }
   }
 };
+
+type HandleRenderAndOutputOptions<Props> = {
+  Component: React.ComponentType<Props>;
+  props: Props;
+  commandOptions: RenderActionOptions;
+  renderOptions: RenderToReadableStreamOptions;
+  strategy: OutputStrategy;
+};
+
+/**
+ * From this point on,
+ * we commit to an OutputStrategy,
+ *
+ * If that render for that given OutputStrategy fails during AppShell Render,
+ * and an error is thrown,
+ * both the renderOptions#onError callback will fire,
+ * AND the catch block will fire.
+ * @see https://react.dev/reference/react-dom/server/renderToReadableStream#recovering-from-errors-inside-the-shell
+ *
+ * However, if the render of the AppShell succeeds,
+ * and an error is thrown in a subsequent part of the render cycle, (Streaming more content as it loads)
+ * React will fail almost silently and default to client side rendering
+ * In this case the server onError will fire,
+ * but the catch block will not fire and rendering will attempt to continue.
+ * @see https://react.dev/reference/react-dom/server/renderToReadableStream#recovering-from-errors-outside-the-shell
+ *
+ * */
+
+async function handleRenderAndOutput<Props extends Record<string, unknown> = {}>(
+  options: HandleRenderAndOutputOptions<Props>,
+  cacheableRenderOutput: { value: string; done: boolean },
+) {
+  const Component = options.Component;
+  const props = options.props;
+
+  switch (options.strategy) {
+    case OutputStrategy.SerializedJson:
+      return await renderToSerializedJson(Component, props, options, cacheableRenderOutput);
+    case OutputStrategy.StdoutString:
+      return await renderToMarkup(Component, props, options, cacheableRenderOutput);
+    case OutputStrategy.StdoutStream:
+      return await renderToStdoutStream(Component, props, options, cacheableRenderOutput);
+    case OutputStrategy.NamedPipe: {
+      await pipeComponentToNamedPipe(options, Component, props, options.renderOptions);
+      break;
+    }
+  }
+}
+
+async function renderToSerializedJson<Props extends Record<string, unknown> = {}>(
+  Component: React.ComponentType<Props>,
+  props: Props,
+  options: HandleRenderAndOutputOptions<Props>,
+  cacheableRenderOutput: { value: string; done: boolean },
+) {
+  const html = await pipeComponentToCollectedString(<Component {...props} />, options.renderOptions);
+  if (options.commandOptions.cache) {
+    cacheableRenderOutput.value = html;
+    cacheableRenderOutput.done = true;
+  }
+  process.stdout.write(JSON.stringify({ html, exitCode: 0, props }));
+}
+
+async function renderToMarkup<Props extends Record<string, unknown> = {}>(
+  Component: React.ComponentType<Props>,
+  props: Props,
+  options: HandleRenderAndOutputOptions<Props>,
+  cacheableRenderOutput: { value: string; done: boolean },
+) {
+  const html = await pipeComponentToCollectedString(<Component {...props} />, options.renderOptions);
+  if (options.commandOptions.cache) {
+    cacheableRenderOutput.value = html;
+    cacheableRenderOutput.done = true;
+  }
+  process.stdout.write(html);
+}
+
+async function renderToStdoutStream<Props extends Record<string, unknown> = {}>(
+  Component: React.ComponentType<Props>,
+  props: Props,
+  options: HandleRenderAndOutputOptions<Props>,
+  cacheableRenderOutput: { value: string; done: boolean },
+) {
+  const listeners: ((chunk: string) => void | Promise<void>)[] = [];
+  if (options.commandOptions.cache) {
+    const updateCacheableRenderOutput = (chunk: string) => {
+      cacheableRenderOutput.value += chunk;
+    };
+    listeners.push(updateCacheableRenderOutput);
+  }
+  await pipeComponentToStdout(<Component {...props} />, options.renderOptions, listeners);
+  if (options.commandOptions.cache) {
+    cacheableRenderOutput.done = true;
+  }
+}
 
 export default renderAction;

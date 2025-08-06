@@ -20,9 +20,7 @@ export type CacheRenderOutputMessagePayload = Omit<
   props: SerializableObject;
 };
 
-export interface CacheRenderOutputOptions<
-  Props extends SerializableObject = SerializableObject,
-> {
+export interface CacheRenderOutputOptions<Props extends SerializableObject = SerializableObject> {
   cacheKey: string;
   cacheType: "bunfs" | "bunsqlite3";
   component: {

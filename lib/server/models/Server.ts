@@ -35,20 +35,10 @@ type IWaavyServerHttpServiceRegistry = Map<
   IWaavyServerHttpServiceRegistryKey,
   Set<IWaavyServerHttpServiceRegistryHandler>
 >;
-type IWaavyServerHttpServiceRegistryKey =
-  | "web"
-  | "api"
-  | "socket"
-  | "middleware"
-  | "rpc";
+type IWaavyServerHttpServiceRegistryKey = "web" | "api" | "socket" | "middleware" | "rpc";
 type IWaavyServerHttpServiceRegistryHandler = IWaavyServerHttpWebServiceHandler;
-type IWaavyServerHttpWebServiceHandler = (
-  request: Request,
-) => Promise<Response>;
-type IWaavyServerHttpAPIServiceHandler<A, R> = (
-  context: RequestContext,
-  args: A,
-) => Promise<R>;
+type IWaavyServerHttpWebServiceHandler = (request: Request) => Promise<Response>;
+type IWaavyServerHttpAPIServiceHandler<A, R> = (context: RequestContext, args: A) => Promise<R>;
 type IAddWaavyServiceKey = IWaavyServerHttpServiceRegistryKey;
 
 interface IWaavyServer {
@@ -80,15 +70,8 @@ abstract class AbstractWaavyServer {
   abstract stop(): Promise<boolean>;
   abstract start(): IWaavyServer;
 
-  abstract routes(): Record<
-    string,
-    Bun.RouterTypes.RouteValue<Extract<unknown, string>>
-  >;
-  abstract fetch(
-    this: Bun.Server,
-    request: Request,
-    server: Bun.Server,
-  ): Response | Promise<Response>;
+  abstract routes(): Record<string, Bun.RouterTypes.RouteValue<Extract<unknown, string>>>;
+  abstract fetch(this: Bun.Server, request: Request, server: Bun.Server): Response | Promise<Response>;
 
   protected get port() {
     return process.env.WAAVY_PORT || 8080;
@@ -99,10 +82,7 @@ abstract class AbstractWaavyServer {
   }
 }
 
-class WaavyServer
-  extends AbstractWaavyServer
-  implements AbstractWaavyServer, IWaavyServer
-{
+class WaavyServer extends AbstractWaavyServer implements AbstractWaavyServer, IWaavyServer {
   constructor(options: IWaavyServerConstructorOptions) {
     super(options);
   }
@@ -123,18 +103,11 @@ class WaavyServer
     }
     return false;
   }
-  routes(): Record<
-    string,
-    Bun.RouterTypes.RouteValue<Extract<unknown, string>>
-  > {
+  routes(): Record<string, Bun.RouterTypes.RouteValue<Extract<unknown, string>>> {
     return {};
   }
 
-  fetch(
-    this: Bun.Server,
-    request: Request,
-    server: Bun.Server,
-  ): Response | Promise<Response> {
+  fetch(this: Bun.Server, request: Request, server: Bun.Server): Response | Promise<Response> {
     throw new Error("Method not implemented.");
   }
 }

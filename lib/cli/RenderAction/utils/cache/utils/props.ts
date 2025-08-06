@@ -6,9 +6,7 @@ function createDeterministicProps(props: SerializableObject) {
   return JSON.parse(deterministicStringify(props));
 }
 
-export function serializeProps<Props extends SerializableObject>(
-  props: Props,
-): SharedArrayBuffer | null {
+export function serializeProps<Props extends SerializableObject>(props: Props): SharedArrayBuffer | null {
   if (props && typeof props === "object" && serializable(props)) {
     const dpo = createDeterministicProps(props);
     return serialize(dpo);

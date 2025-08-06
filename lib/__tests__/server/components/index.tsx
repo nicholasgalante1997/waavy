@@ -1,14 +1,8 @@
 import React from "react";
 
-export const SimpleComponent = () =>
-  React.createElement("div", { id: "test" }, "Hello World");
-export const ComponentWithProps = ({
-  name,
-  age,
-}: {
-  name: string;
-  age: number;
-}) => React.createElement("div", null, `Hello ${name}, age ${age}`);
+export const SimpleComponent = () => React.createElement("div", { id: "test" }, "Hello World");
+export const ComponentWithProps = ({ name, age }: { name: string; age: number }) =>
+  React.createElement("div", null, `Hello ${name}, age ${age}`);
 export const NestedComponent = () =>
   React.createElement(
     "div",

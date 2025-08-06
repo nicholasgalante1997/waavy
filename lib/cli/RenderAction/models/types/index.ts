@@ -1,7 +1,4 @@
-import type {
-  CacheEntry,
-  CacheEntryWithRenderOutput,
-} from "../../utils/cache/types";
+import type { CacheEntry } from "../../utils/cache/types";
 
 export default interface IRenderCache {
   [Symbol.dispose](): void;

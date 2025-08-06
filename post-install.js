@@ -10,19 +10,15 @@ import { createGunzip } from "zlib";
 
 try {
   await import("dotenv/config.js");
-} catch (error) {
-  /** Fail silently */
-}
+} catch (error) {}
 
-// Skip install in local development environments
-if (process.env.WAAVY_SKIP_POSTINSTALL === "true") {
-  console.log("Skipping postinstall in local development environment");
-  process.exit(0);
-}
+const skipPostInstall =
+  process.env.WAAVY_SKIP_POSTINSTALL === "true" ||
+  process.env.CI === "true" ||
+  process.env.GITHUB_ACTIONS === "true";
 
-// Skip postinstall in CI environments
-if (process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true") {
-  console.log("Skipping postinstall in CI environment");
+if (skipPostInstall) {
+  console.log("Skipping waavy post-install job!");
   process.exit(0);
 }
 
@@ -42,61 +38,60 @@ postinstall()
 
 async function postinstall() {
   try {
-    await downloadBinary();
+    await downloadWaavyExecutable();
   } catch (error) {
     console.error("Error during post-installation:", error.message);
     process.exit(1);
   }
 }
 
-async function downloadBinary() {
+async function downloadWaavyExecutable() {
   const platform = process.platform;
   const arch = process.arch;
 
-  const platformMap = {
-    linux: "waavy-linux-x64-modern",
-    darwin: "waavy-macos-x64",
-    win32: "waavy-windows-x64-modern.exe",
-  };
+  const platformMap = Object.freeze({
+    linux: {
+      x64: "waavy-linux-x64",
+      arm64: "waavy-linux-arm64",
+    },
+    darwin: {
+      x64: "waavy-macos-x64",
+      arm64: "waavy-macos-arm64",
+    },
+    win32: {
+      x64: "waavy-windows-x64.exe",
+    },
+  });
 
-  let binaryName = platformMap[platform];
-
-  if (arch === "arm64") {
-    binaryName =
-      platform === "linux"
-        ? "waavy-linux-arm64"
-        : platform === "darwin"
-          ? "waavy-macos-arm64"
-          : null;
-  }
+  const binaryName = platformMap[platform]?.[arch];
 
   if (!binaryName) {
     warnPlatformCompatabilityAndExit();
   }
 
-  const binDir = path.join(__dirname, "bin");
-  const binaryPath = path.join(binDir, binaryName);
+  const outputBinaryName = platform === "win32" ? "waavy.exe" : "waavy";
+  const outputBinaryDir = path.join(__dirname, "bin");
+  const outputBinaryPath = path.join(outputBinaryDir, outputBinaryName);
 
-  if (fs.existsSync(binaryPath)) {
+  if (fs.existsSync(outputBinaryPath)) {
     console.log("Binary already exists, skipping download!");
     return;
   }
 
-  if (!fs.existsSync(binDir)) {
-    fs.mkdirSync(binDir, { recursive: true });
+  if (!fs.existsSync(outputBinaryDir)) {
+    fs.mkdirSync(outputBinaryDir, { recursive: true });
   }
 
-  // Download the gzipped version
   const gzippedBinaryName = `${binaryName}.gz`;
   const url = `https://github.com/nicholasgalante1997/waavy/releases/download/v${version}/${gzippedBinaryName}`;
 
-  console.log(`📦 Downloading ${gzippedBinaryName} from ${url}...`);
+  console.log(`📦 Downloading ${gzippedBinaryName} from ${url} to ${outputBinaryPath}...`);
 
   try {
-    await downloadAndDecompressFile(url, binaryPath);
+    await downloadAndDecompressFile(url, outputBinaryPath);
 
     if (platform !== "win32") {
-      fs.chmodSync(binaryPath, "755");
+      fs.chmodSync(outputBinaryPath, "755");
     }
 
     console.log(`🚀 waavy binary installed successfully!`);
@@ -135,10 +130,7 @@ async function downloadAndDecompressFile(url, binaryPath, maxRedirects = 5) {
     let lastProgress = 0;
     const startTime = Date.now();
 
-    // Create gunzip stream
     const gunzip = createGunzip();
-
-    // Create final output stream
     const outputStream = fs.createWriteStream(binaryPath);
 
     try {
@@ -161,9 +153,7 @@ async function downloadAndDecompressFile(url, binaryPath, maxRedirects = 5) {
             const bar = "█".repeat(filled) + "░".repeat(barLength - filled);
 
             // Clear line and show progress
-            process.stdout.write(
-              `\r[${bar}] ${progress}% (${speed.toFixed(1)} MB/s)`
-            );
+            process.stdout.write(`\r[${bar}] ${progress}% (${speed.toFixed(1)} MB/s)`);
 
             lastProgress = progress;
           }
