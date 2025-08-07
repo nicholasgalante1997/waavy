@@ -1,7 +1,42 @@
 import React from "react";
 import { renderToString, renderToReadableStream } from "react-dom/server";
+import { prerender } from "react-dom/static";
+
 import type { WriteStream } from "fs";
+import path from "path";
 import { Readable } from "stream";
+
+interface WriteStaticComponentToFileOptions {
+  prerenderOptions?: Parameters<typeof prerender>[1];
+  outdir: string;
+  filename: string;
+}
+
+export async function writeStaticComponentToFile(component: React.ReactNode, options: WriteStaticComponentToFileOptions) {
+  const { filename, outdir, prerenderOptions } = options;
+
+  try {
+    const { prelude } = await prerenderStaticComponent(component, prerenderOptions);
+    const html = new Response(prelude, { headers: { "Content-Type": "text/html" } });
+    const outfile = path.join(outdir, filename);
+
+    if (await Bun.file(outfile).exists()) {
+      throw new Error(`File already exists: ${outfile}`);
+    }
+
+    await Bun.write(outfile, html, { createPath: true });
+
+  } catch(error) {
+    
+  }
+}
+
+export async function prerenderStaticComponent(
+  component: React.ReactNode,
+  options: Parameters<typeof prerender>[1] = {},
+) {
+  return prerender(component, options);
+}
 
 export function transformComponentToString(
   component: React.ReactNode,
