@@ -185,11 +185,11 @@ if (container) {
 `;
 }
 
-function getNodeModulesWaavyCache() {
+export function getNodeModulesWaavyCache() {
   return path.join(process.cwd(), "node_modules", ".cache", "waavy");
 }
 
-async function getTempFileInNodeModulesCache(extension: string, integrityHash: string) {
+export async function getTempFileInNodeModulesCache(extension: string, integrityHash: string) {
   const cacheDir = getNodeModulesWaavyCache();
   if (!(await fs.exists(cacheDir))) {
     await fs.mkdir(cacheDir, { recursive: true });

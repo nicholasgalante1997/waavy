@@ -1,4 +1,14 @@
-export type RenderContext = {};
+export type GetServerSideProps<Props> = (ctx: {
+  props?: Props;
+  waavyRenderContext: RenderContext;
+}) => Promise<{ data: Props }>;
+
+export type RenderContext = {
+  path?: string | null;
+  search?: URLSearchParams | null;
+  method?: string | null;
+  headers?: Headers | null;
+};
 
 export type LoaderFn<Props> = (request: Partial<Request>, ctx: RenderContext) => Promise<{ data: Props }>;
 

@@ -8,6 +8,8 @@
         "commander": "^14.0.0",
         "debug": "^4.4.1",
         "dotenv": "^16.5.0",
+        "lodash.get": "^4.4.2",
+        "lodash.set": "^4.3.2",
         "picocolors": "^1.1.1",
         "printf": "^0.6.1",
         "undici": "^7.11.0",
@@ -577,7 +579,11 @@
 
     "locate-path": ["locate-path@6.0.0", "", { "dependencies": { "p-locate": "^5.0.0" } }, "sha512-iPZK6eYjbxRu3uB4/WZ3EsEIMJFMqAoopl3R+zuq0UjcAm/MO6KCweDgPfP3elTztoKP3KtnVHxTn2NHBSDVUw=="],
 
+    "lodash.get": ["lodash.get@4.4.2", "", {}, "sha512-z+Uw/vLuy6gQe8cfaFWD7p0wVv8fJl3mbzXh33RS+0oW2wvUqiRXiQ69gLWSLpgB5/6sU+r6BlQR0MBILadqTQ=="],
+
     "lodash.merge": ["lodash.merge@4.6.2", "", {}, "sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ=="],
+
+    "lodash.set": ["lodash.set@4.3.2", "", {}, "sha512-4hNPN5jlm/N/HLMCO43v8BXKq9Z7QdAGc/VGrRD61w8gN9g/6jF9A4L1pbUgBLCffi0w9VsXfTOij5x8iTyFvg=="],
 
     "lodash.startcase": ["lodash.startcase@4.4.0", "", {}, "sha512-+WKqsK294HMSc2jEbNgpHpd0JfIBhp7rEV4aqXWqFr6AlXov+SlcgB1Fv01y2kGe3Gc8nMW7VA0SrGuSkRfIEg=="],
 

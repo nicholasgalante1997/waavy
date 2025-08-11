@@ -2,9 +2,9 @@ import React from "react";
 
 import path from "path";
 
-import { ComponentNotFoundError, InvalidExtensionError, PropDataLoaderException } from "@/errors";
+import { ComponentNotFoundError, InvalidExtensionError } from "@/errors";
 import { load } from "@/utils";
-import type { LoaderFn, RenderActionOptions } from "@/types";
+import type { RenderActionOptions, RenderContext } from "@/types";
 
 export function validateComponentExtension(pathToComponent: string) {
   const extension = path.extname(pathToComponent).replace(".", "");
@@ -27,31 +27,23 @@ export async function loadComponent<Props = {}>(
   return Component as React.ComponentType<Props>;
 }
 
-export async function getWaavyModules(pathToFile: string) {
-  const waavyFileModules = await load(pathToFile, "waavy");
-
-  if (waavyFileModules == null) {
-    return null;
-  }
-
-  return waavyFileModules;
-}
-
 export async function getComponentProps<Props extends {} = {}>(
   pathToComponent: string,
   options: RenderActionOptions,
 ) {
-  const waavyFileModules = await getWaavyModules(pathToComponent);
-
   let props = getPropsFromOptions(options);
-  const tprops = structuredClone(props);
-
-  try {
-    props = await fetchLoaderProvProps(waavyFileModules, props, options.request);
-  } catch (e) {
-    return tprops as Props;
+  const copy = structuredClone(props);
+  const gssp = await load(pathToComponent, "getServerSideProps");
+  if (gssp && typeof gssp === "function") {
+    try {
+      const gsspProps = await Promise.resolve(
+        gssp({ props, waavyRenderContext: getWaavyRenderContext(options?.request) }),
+      );
+      props = { ...props, ...gsspProps?.data };
+    } catch (e) {
+      return copy as Props;
+    }
   }
-
   return props as Props;
 }
 
@@ -64,34 +56,11 @@ export function getPropsFromOptions(options: RenderActionOptions): Record<string
   }
 }
 
-export function getWaavyRenderContext(request?: Partial<Request>) {
+export function getWaavyRenderContext(request?: Partial<Request>): RenderContext {
   return {
     path: request?.url ? new URL(request.url).pathname : null,
     search: request?.url ? new URL(request.url).searchParams : null,
     method: request?.method ?? null,
+    headers: request?.headers ?? null,
   };
-}
-
-export async function fetchLoaderProvProps<Props extends {} = {}>(
-  waavyFileModules: any,
-  props: Props,
-  request: Partial<Request> = {},
-) {
-  if (
-    waavyFileModules &&
-    "dataLoader" in waavyFileModules &&
-    typeof waavyFileModules?.dataLoader === "function"
-  ) {
-    try {
-      const loader = waavyFileModules?.dataLoader as LoaderFn<typeof props>;
-      const loaderResult = await Promise.resolve(await loader(request, getWaavyRenderContext()));
-      if (loaderResult && loaderResult?.data && typeof loaderResult?.data === "object") {
-        props = { ...props, ...loaderResult?.data };
-      }
-    } catch (e) {
-      throw e instanceof Error ? e : new PropDataLoaderException(String(e));
-    }
-  }
-
-  return props as Props;
 }

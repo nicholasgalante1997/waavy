@@ -83,5 +83,3 @@ export type Serializable<T> = {
           ? Serializable<T[K]>
           : T[K];
 };
-
-

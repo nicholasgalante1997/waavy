@@ -17,9 +17,10 @@ const bundleAction: BundleAction = async (options) => {
   }
 
   verbose("Starting bundle...");
+  verbose(`Provided options: ${inspect(options, false, 10, true)}`);
   const start = performance.now();
 
-  const input = options.dir || "./www/src/browser";
+  const input = options?.dir || "./www/src/browser";
   verbose(`Input directory: ${input}`);
 
   try {
@@ -46,7 +47,7 @@ const bundleAction: BundleAction = async (options) => {
     entrypoints,
     outdir: options.out || "./waavy-out",
     ...defaults,
-    ...options.config,
+    ...(options.bundler?.configOverrides || {}),
   };
 
   verbose(`Bun config: ${inspect(bunConfig, false, 3, true)}`);

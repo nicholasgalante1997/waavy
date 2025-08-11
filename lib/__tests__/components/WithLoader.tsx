@@ -27,15 +27,13 @@ const Main = ({ items }: MainProps) => <List items={items} />;
 
 export default Main;
 
-export const waavy = {
-  dataLoader: async () => {
-    return {
-      data: {
-        items: Array.from({ length: 100 }, (_, index) => ({
-          id: `item-${index}`,
-          content: "Item #" + index,
-        })),
-      },
-    };
-  },
-};
+export async function getServerSideProps() {
+  return {
+    data: {
+      items: Array.from({ length: 100 }, (_, index) => ({
+        id: `item-${index}`,
+        content: "Item #" + index,
+      })),
+    },
+  };
+}

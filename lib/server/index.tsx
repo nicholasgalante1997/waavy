@@ -1,6 +1,6 @@
 import React from "react";
 import { renderToString, renderToReadableStream } from "react-dom/server";
-import { prerender } from "react-dom/static";
+import { prerender } from "react-dom/static.edge";
 
 import type { WriteStream } from "fs";
 import path from "path";
@@ -12,11 +12,14 @@ interface WriteStaticComponentToFileOptions {
   filename: string;
 }
 
-export async function writeStaticComponentToFile(component: React.ReactNode, options: WriteStaticComponentToFileOptions) {
+export async function writeStaticComponentToFile(
+  component: React.ReactNode,
+  options: WriteStaticComponentToFileOptions,
+) {
   const { filename, outdir, prerenderOptions } = options;
 
   try {
-    const { prelude } = await prerenderStaticComponent(component, prerenderOptions);
+    const { prelude } = await prerender(component, prerenderOptions);
     const html = new Response(prelude, { headers: { "Content-Type": "text/html" } });
     const outfile = path.join(outdir, filename);
 
@@ -25,17 +28,7 @@ export async function writeStaticComponentToFile(component: React.ReactNode, opt
     }
 
     await Bun.write(outfile, html, { createPath: true });
-
-  } catch(error) {
-    
-  }
-}
-
-export async function prerenderStaticComponent(
-  component: React.ReactNode,
-  options: Parameters<typeof prerender>[1] = {},
-) {
-  return prerender(component, options);
+  } catch (error) {}
 }
 
 export function transformComponentToString(
