@@ -23,15 +23,15 @@ time ./out/executables/waavy-linux-x64 render ./lib/__tests__/components/WithLoa
 echo "##### <render/linux/sh -- WithLoader Typescript> #####"
 
 time ./out/executables/waavy-linux-x64 render ./lib/__tests__/components/Extended.tsx --props "{\"items\": [\"One\", \"Two\", \"Three\"]}" --cache --cache-type bunsqlite3 --cache-key password
-echo "##### <render/linux/sh -- WithLoader Typescript Cache Bun SQLite3> #####"
+echo "##### <render/linux/sh -- Extended Typescript Cache Bun SQLite3> #####"
 
 time ./out/executables/waavy-linux-x64 render ./lib/__tests__/components/Extended.tsx --props "{\"items\": [\"One\", \"Two\", \"Three\"]}" --cache --cache-type bunfs --cache-key password
-echo "##### <render/linux/sh -- WithLoader Typescript Cache BunFs> #####"
+echo "##### <render/linux/sh -- Extended Typescript Cache BunFs> #####"
 
 time ./out/executables/waavy-linux-x64 render ./lib/__tests__/components/Extended.tsx --props "{\"items\": [\"One\", \"Two\", \"Three\"]}" --cache --cache-type bunsqlite3 --cache-key password
-echo "##### <render/linux/sh -- WithLoader Typescript Cache Bun SQLite3> #####"
+echo "##### <render/linux/sh -- Extended Typescript Cache Bun SQLite3> #####"
 
 time ./out/executables/waavy-linux-x64 render ./lib/__tests__/components/Extended.tsx --props "{\"items\": [\"One\", \"Two\", \"Three\"]}" --cache --cache-type bunfs --cache-key password
-echo "##### <render/linux/sh -- WithLoader Typescript Cache BunFs> #####"
+echo "##### <render/linux/sh -- Extended Typescript Cache BunFs> #####"
 
 echo "All tests completed successfully!"

@@ -8,7 +8,9 @@ import { getErrorPageMarkup } from "../errors";
 
 type CreateRenderOptionsConfig = {
   bootstrap?: string[];
-  ErrorComponent?: React.ComponentType<{ error: unknown; errorInfo?: unknown } & Record<string, unknown>> | null;
+  ErrorComponent?: React.ComponentType<
+    { error: unknown; errorInfo?: unknown } & Record<string, unknown>
+  > | null;
   errorConfiguration?: { page: string };
   raOptions?: RenderActionOptions;
   signal?: AbortController["signal"];

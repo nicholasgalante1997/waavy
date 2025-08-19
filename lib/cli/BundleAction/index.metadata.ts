@@ -6,17 +6,12 @@ export const options = [
   {
     flags: "-d, --dir <input-directory>",
     description: "The input directory to bundle",
-    default: "./www/src/browser",
+    default: undefined,
   },
   {
     flags: "-o, --out <output-directory>",
     description: 'Where to put the built output files. Default: "waavy-out"',
-    default: "./waavy-out",
-  },
-  {
-    flags: "-c, --config <file>",
-    description: "A build config ts file that can be used to override default build settings.",
-    default: "waavy.bundler.ts",
+    default: undefined,
   },
   {
     flags: "--clean",
