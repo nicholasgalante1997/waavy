@@ -1,35 +1,58 @@
 import fs from "fs/promises";
 import path from "path";
 
-export function getReactPageHydrationTemplate(useWaavy = false) {}
+import HydrationError, { HydrationErrorEnum } from "@/errors/Hydration";
 
-function getWaavyReactPageHydrationTemplate() {}
-function getNonWaavyReactPageHydrationTemplate() {}
-
-function addReactImport(template: string) {
-  return template + `import React from "react";`;
+interface TempFileOptions {
+  extension: "js" | "jsx" | "ts" | "tsx";
 }
 
-function addReactDOMClientImport(template: string) {
-  return template + `import * as ReactDOMClient from "react-dom/client";`;
-}
+export async function bundleInlineCode(
+  code: string,
+  tempFile: string,
+  outdir: string,
+  buildOptionOverrides: Partial<Bun.BuildConfig> = {},
+): Promise<Bun.BuildOutput> {
+  try {
+    await Bun.write(tempFile, code, { createPath: true });
 
-function addReactPageImport(template: string, pathToComponent: string) {
-  return (
-    template +
-    `import Page from "${path.relative(path.join(getNodeModulesWaavyCache(), ".browser", ".hydration-bundles"), path.resolve(pathToComponent.replace(/\.(t|j)sx?$/, "")))}";`
-  );
-}
+    const format = "esm";
+    const target = "browser";
+    const minify = true;
 
-function addWaavyBrowserImport(template: string) {
-  return template + `import waavy from "waavy/browser";`;
+    const result = await Bun.build({
+      entrypoints: [tempFile],
+      outdir,
+      target,
+      format,
+      packages: "bundle",
+      external: [],
+      minify,
+      splitting: false,
+      sourcemap: "none",
+      root: ".",
+      ...buildOptionOverrides,
+    });
+
+    return result;
+  } catch (e) {
+    console.error("[bundleInlineCode]: An Exception was thrown during an attempt to build. %s", e);
+    throw e;
+  } finally {
+    await fs
+      .unlink(tempFile)
+      .then(() => console.log("[bundleInlineCode::unlink]: Temp file deleted:", tempFile))
+      .catch((err) => {
+        console.error("[bundleInlineCode::unlink]: Error deleting temp file:", err);
+      });
+  }
 }
 
 export function getNodeModulesWaavyCache() {
   return path.join(process.cwd(), "node_modules", ".cache", "waavy");
 }
 
-export async function getTempFileInNodeModulesCache(extension: string) {
+export async function getTempFileInNodeModulesCache({ extension }: TempFileOptions) {
   const cacheDir = path.join(getNodeModulesWaavyCache(), ".browser", ".hydration-bundles");
   try {
     await fs.access(cacheDir, fs.constants.O_DIRECTORY);
@@ -46,4 +69,27 @@ export async function getTempFileInNodeModulesCache(extension: string) {
   }
   const tempFile = path.join(cacheDir, `hydration-${Bun.randomUUIDv7()}.${extension}`);
   return tempFile;
+}
+
+export function handleHydrationBundleOutput(filename: string, output: Bun.BuildOutput) {
+  console.log(`Build completed for ${filename}`);
+  const { logs, outputs, success } = output;
+  if (!success) {
+    console.error("Build failed, printing log output...");
+    logs.forEach((log) => console.error(log));
+    throw new HydrationError(HydrationErrorEnum.BundleFailed);
+  }
+
+  outputs.forEach((output) => printBuildArtifactSummary(filename, output));
+}
+
+function printBuildArtifactSummary(input: string, artifact: Bun.BuildArtifact) {
+  console.log(`Artifact Report for ${input}`);
+  console.log("-----------------------------");
+  console.log(`Output File: ${artifact.path}`);
+  console.log(`Size: ${artifact.size} bytes`);
+  console.log(`Type: ${artifact.type}`);
+  console.log(`Artifact Kind: ${artifact.kind}`);
+  console.log(`Integrity Hash: ${artifact.hash}`);
+  console.log("-----------------------------");
 }

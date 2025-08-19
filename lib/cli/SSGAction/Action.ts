@@ -51,9 +51,9 @@ const ssgAction: SSGAction = async (options) => {
 
     const { route, routes = [], ...rest } = page;
     if (route) {
-      handleStaticRoute(rest, route);
+      handleStaticRoute(rest, route, outdir);
     } else {
-      await Promise.all(routes.map((route) => handleStaticRoute(page, route)));
+      await Promise.all(routes.map((route) => handleStaticRoute(page, route, outdir)));
     }
   }
 };
